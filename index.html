@@ -105,7 +105,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
     <div class="field"><label for="toCountry">Delivery country code</label><input id="toCountry" maxlength="2" pattern="[A-Za-z]{2}" placeholder="ES" required></div>
     <div class="field"><label for="toPostcode">Delivery postcode</label><input id="toPostcode" required></div>
     <div class="field"><label for="toCity">Delivery city</label><input id="toCity" required></div>
-    <div class="field"><label for="cargoType">Cargo</label><input id="cargoType" required placeholder="Refrigerated"></div>
+    <div class="field"><label for="cargoType">Cargo</label><select id="cargoType" required><option value="" selected disabled>Select cargo type</option><option>Refrigerator</option><option>Tautliner</option><option>Tilt Truck</option><option>MEGA</option><option>JUMBO</option></select></div>
     <div class="field"><label for="temperature">Temperature</label><input id="temperature" placeholder="-18°C"></div>
     <div class="field"><label for="weight">Weight (kg)</label><input id="weight" type="number" min="0" step="0.01"></div>
     <div class="field"><label for="pallets">Pallets</label><input id="pallets" type="number" min="0" step="1"></div>
