@@ -95,7 +95,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
   </main>
 </div>
 <div class="modal" id="requestModal"><div class="modalbox wide">
-  <div class="modalhead"><h2>New transport request</h2><button class="close" data-close="requestModal">×</button></div>
+  <div class="modalhead"><h2 id="requestTitle">New transport request</h2><button class="close" data-close="requestModal">×</button></div>
   <p>Enter the route and cargo details. Your team will see the request as soon as it is saved.</p>
   <form id="requestForm"><div class="formgrid">
     <div class="field"><label for="fromCountry">Loading country code</label><input id="fromCountry" maxlength="2" pattern="[A-Za-z]{2}" placeholder="SK" required></div>
@@ -134,7 +134,7 @@ const SUPABASE_KEY="sb_publishable_i1zo2QM56j7BsXVaS2hvzg_5Nq-N-ne";
 const WORKSPACE_ID="4dc0b1f4-0870-49cc-acbd-52003431ba2a";
 const APP_URL="https://dimagestus.github.io/cargo/";
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-let currentUser=null,currentRole="",requests=[],activeRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
+let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
 el("palletMode").addEventListener("change",()=>{el("palletCountField").style.display=el("palletMode").value==="count"?"flex":"none";if(el("palletMode").value!=="count")el("pallets").value="";});
 function palletLabel(row){return Number(row.pallet_count)===-1?"Pallets to change":row.pallet_count?row.pallet_count+" pallets":"";}
@@ -155,7 +155,8 @@ function renderRequests(){
     const route='<b>'+countryFlag(row.loading_country)+'</b> '+escapeHtml(row.loading_postcode)+' <small style="display:inline">'+escapeHtml(row.loading_city)+'</small><span class="arrow">→</span><b>'+countryFlag(row.delivery_country)+'</b> '+escapeHtml(row.delivery_postcode)+' <small style="display:inline">'+escapeHtml(row.delivery_city)+'</small><small>'+dateLabel(row.pickup_date)+(row.note?" · "+escapeHtml(row.note):"")+'</small>';
     const price=row.price_eur?'<button class="action price" data-price="'+row.id+'">'+Number(row.price_eur).toLocaleString("en-US")+" €</button>":'<button class="action price" data-price="'+row.id+'">＋ Price</button>';
     const next=row.status==="Accepted"||row.status==="Declined"?"":'<button class="action" data-status="'+row.id+'" data-next="'+(row.status==="Price sent"?"Accepted":"Declined")+'">'+(row.status==="Price sent"?"✓ Accept":"× Decline")+'</button>';
-    return '<tr><td><div class="reqid">#'+row.id+'</div><div class="mini">'+escapeHtml(row.client||"Team request")+'</div><div style="margin-top:7px"><span class="status '+statusClass(row.status)+'">'+escapeHtml(row.status)+'</span></div></td><td class="route">'+route+'</td><td class="cargo"><b>'+cargo+'</b>'+(row.client?'<div class="company">▤ '+escapeHtml(row.client)+'</div>':"")+'</td><td class="date">'+owner+'<div class="mini">'+createdLabel(row.created_at)+'</div></td><td><div class="actions">'+price+next+'<button type="button" class="action icon-action" data-chat="'+row.id+'" title="Chat about this cargo" aria-label="Chat about request #'+row.id+'">💬</button><button type="button" class="action icon-action" data-copy="'+row.id+'" title="Copy cargo details" aria-label="Copy request #'+row.id+' details">▣</button><button type="button" class="action icon-action" data-maps="'+row.id+'" title="Open route in Google Maps" aria-label="Open request #'+row.id+' route in Google Maps">↗</button></div></td></tr>';
+    const edit=row.created_by===currentUser.id?'<button type="button" class="action icon-action" data-edit="'+row.id+'" title="Edit my request" aria-label="Edit request #'+row.id+'">✎</button>':"";
+    return '<tr><td><div class="reqid">#'+row.id+'</div><div class="mini">'+escapeHtml(row.client||"Team request")+'</div><div style="margin-top:7px"><span class="status '+statusClass(row.status)+'">'+escapeHtml(row.status)+'</span></div></td><td class="route">'+route+'</td><td class="cargo"><b>'+cargo+'</b>'+(row.client?'<div class="company">▤ '+escapeHtml(row.client)+'</div>':"")+'</td><td class="date">'+owner+'<div class="mini">'+createdLabel(row.created_at)+'</div></td><td><div class="actions">'+price+next+edit+'<button type="button" class="action icon-action" data-chat="'+row.id+'" title="Chat about this cargo" aria-label="Chat about request #'+row.id+'">💬</button><button type="button" class="action icon-action" data-copy="'+row.id+'" title="Copy cargo details" aria-label="Copy request #'+row.id+' details">▣</button><button type="button" class="action icon-action" data-maps="'+row.id+'" title="Open route in Google Maps" aria-label="Open request #'+row.id+' route in Google Maps">↗</button></div></td></tr>';
   }).join("")||'<tr><td colspan="5" class="empty">No requests found. Use “New request” to add one for your team.</td></tr>';
   el("totalStat").textContent=requests.length;
   el("waitingStat").textContent=requests.filter(r=>r.status==="Waiting for price").length;
@@ -210,16 +211,24 @@ el("inviteForm").onsubmit=async event=>{
   if(error||data?.error){showMessage("inviteMessage",data?.error||error.message||"Invitation failed.",true);return}
   showMessage("inviteMessage","Invitation sent to "+email+".",false);el("inviteEmail").value="";setTimeout(()=>el("inviteModal").classList.remove("show"),1300);
 };
-el("newRequest").onclick=()=>el("requestModal").classList.add("show");
+el("newRequest").onclick=()=>{activeEditRequest=null;el("requestForm").reset();el("requestTitle").textContent="New transport request";el("saveRequest").textContent="Save request";el("palletCountField").style.display="none";el("requestModal").classList.add("show")};
 el("requestForm").onsubmit=async event=>{
   event.preventDefault();const from=el("fromCountry").value.trim().toUpperCase(),to=el("toCountry").value.trim().toUpperCase();
   if(!/^[A-Z]{2}$/.test(from)||!/^[A-Z]{2}$/.test(to)){toast("Enter two-letter country codes.");return}
   el("saveRequest").disabled=true;
-  const record={workspace_id:WORKSPACE_ID,created_by:currentUser.id,loading_country:from,loading_postcode:el("fromPostcode").value.trim(),loading_city:el("fromCity").value.trim(),delivery_country:to,delivery_postcode:el("toPostcode").value.trim(),delivery_city:el("toCity").value.trim(),pickup_date:el("pickupDate").value,cargo_type:el("cargoType").value.trim(),temperature:el("temperature").value.trim()||null,weight_kg:el("weight").value?Number(el("weight").value):null,pallet_count:el("palletMode").value==="exchange"?-1:(el("palletMode").value==="count"&&el("pallets").value?Number(el("pallets").value):null),client:el("client").value.trim()||null,note:el("requestNote").value.trim()||null};
-  const {error}=await db.from("transport_requests").insert(record);
+  const fields={loading_country:from,loading_postcode:el("fromPostcode").value.trim(),loading_city:el("fromCity").value.trim(),delivery_country:to,delivery_postcode:el("toPostcode").value.trim(),delivery_city:el("toCity").value.trim(),pickup_date:el("pickupDate").value,cargo_type:el("cargoType").value.trim(),temperature:el("temperature").value.trim()||null,weight_kg:el("weight").value?Number(el("weight").value):null,pallet_count:el("palletMode").value==="exchange"?-1:(el("palletMode").value==="count"&&el("pallets").value?Number(el("pallets").value):null),client:el("client").value.trim()||null,note:el("requestNote").value.trim()||null};
+  let error=null;
+  if(activeEditRequest){
+    const result=await db.from("transport_requests").update(fields).eq("id",activeEditRequest).eq("workspace_id",WORKSPACE_ID).eq("created_by",currentUser.id).select("id").maybeSingle();
+    error=result.error;
+    if(!error&&!result.data)error=new Error("You can edit only requests you created.");
+  }else{
+    const result=await db.from("transport_requests").insert(Object.assign({workspace_id:WORKSPACE_ID,created_by:currentUser.id},fields));
+    error=result.error;
+  }
   el("saveRequest").disabled=false;
   if(error){toast("Could not save request: "+error.message);return}
-  el("requestForm").reset();el("requestModal").classList.remove("show");await loadRequests();toast("Request saved for the team");
+  const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestForm").reset();el("palletCountField").style.display="none";el("requestModal").classList.remove("show");await loadRequests();toast(wasEditing?"Request updated":"Request saved for the team");
 };
 function cargoCopyText(row){
   const route=(country,postcode,city)=>[country,postcode,city].filter(Boolean).join(" ");
@@ -293,6 +302,7 @@ el("chatForm").onsubmit=async event=>{
   el("chatInput").value="";el("chatStatus").textContent="";await loadChatMessages();el("chatInput").focus();
 };
 el("rows").onclick=async event=>{
+  const editButton=event.target.closest("[data-edit]");if(editButton){const row=requests.find(item=>String(item.id)===editButton.dataset.edit);if(!row||row.created_by!==currentUser.id)return;activeEditRequest=row.id;el("requestTitle").textContent="Edit transport request #"+row.id;el("saveRequest").textContent="Save changes";el("fromCountry").value=row.loading_country||"";el("fromPostcode").value=row.loading_postcode||"";el("fromCity").value=row.loading_city||"";el("pickupDate").value=row.pickup_date||"";el("toCountry").value=row.delivery_country||"";el("toPostcode").value=row.delivery_postcode||"";el("toCity").value=row.delivery_city||"";const cargo=el("cargoType");if(!Array.from(cargo.options).some(option=>option.value===row.cargo_type)){const legacy=new Option(row.cargo_type,row.cargo_type);legacy.dataset.legacy="true";cargo.add(legacy)}cargo.value=row.cargo_type||"";el("temperature").value=row.temperature||"";el("weight").value=row.weight_kg??"";el("palletMode").value=Number(row.pallet_count)===-1?"exchange":row.pallet_count?"count":"";el("pallets").value=Number(row.pallet_count)>0?row.pallet_count:"";el("palletCountField").style.display=el("palletMode").value==="count"?"flex":"none";el("client").value=row.client||"";el("requestNote").value=row.note||"";el("requestModal").classList.add("show");return}
   const chat=event.target.closest("[data-chat]");if(chat){await openChat(chat.dataset.chat);return}
   const copy=event.target.closest("[data-copy]");if(copy){const row=requests.find(item=>String(item.id)===copy.dataset.copy);if(row)await copyCargo(row);return}
   const maps=event.target.closest("[data-maps]");if(maps){const row=requests.find(item=>String(item.id)===maps.dataset.maps);if(row)openCargoMap(row);return}
