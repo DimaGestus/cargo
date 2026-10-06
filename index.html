@@ -227,7 +227,7 @@ el("requestForm").onsubmit=async event=>{
   }
   el("saveRequest").disabled=false;
   if(error){toast("Could not save request: "+error.message);return}
-  const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestForm").reset();el("palletCountField").style.display="none";el("requestModal").classList.remove("show");await loadRequests();toast(wasEditing?"Request updated":"Request saved for the team");
+  const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestForm").reset();el("requestModal").classList.remove("show");await loadRequests();toast(wasEditing?"Request updated":"Request saved for the team");
 };
 function cargoCopyText(row){
   const route=(country,postcode,city)=>[country,postcode,city].filter(Boolean).join(" ");
