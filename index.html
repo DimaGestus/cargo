@@ -146,7 +146,7 @@ function countryFlag(code){const clean=String(code||"").toUpperCase().replace(/[
 function statusClass(status){return status==="Waiting for price"?"waiting":status==="Price sent"?"sent":status==="Accepted"?"accepted":"declined"}
 function initials(email){return String(email||"").split("@")[0].split(/[._-]/).filter(Boolean).slice(0,2).map(part=>part[0].toUpperCase()).join("")||"TM"}
 function dateLabel(date){if(!date)return "";const [year,month,day]=date.slice(0,10).split("-");return day+"."+month}
-function createdLabel(date){return new Date(date).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).replace(/\\//g,".").replace(",","")}
+function createdLabel(date){return new Date(date).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).replaceAll("/",".").replace(",","")}
 function renderRequests(){
   const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
   const filtered=requests.filter(row=>(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&(!load||row.loading_country.startsWith(load))&&(!delivery||row.delivery_country.startsWith(delivery)));
