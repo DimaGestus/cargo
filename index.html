@@ -1,8 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RouteDesk — Team transport requests</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GESTUS — Team transport requests</title>
 <style>
 :root{--navy:#122b3b;--ink:#1c3040;--muted:#82909b;--line:#e7edf0;--bg:#f5f7f8;--teal:#00a88f;--soft:#e7f7f3;--amber:#f5a623;--red:#dc6b67;--blue:#4387d8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -28,23 +27,24 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .empty{text-align:center;padding:40px;color:#8a969d}.pages{display:flex;justify-content:space-between;padding:14px 17px;color:#83919a;font-size:12px;border-top:1px solid var(--line)}
 .modal{position:fixed;inset:0;z-index:12;background:#10253466;display:none;place-items:center;padding:18px}.modal.show{display:grid}.modalbox{width:min(480px,100%);max-height:min(92vh,850px);overflow:auto;background:#fff;border-radius:13px;padding:23px;box-shadow:0 20px 80px #122b3b33}.modalbox.wide{width:min(760px,100%)}.modalbox h2{margin:0 0 7px;font-size:19px}.modalbox p{color:#71818b;font-size:13px;margin:0 0 19px}.modalhead{display:flex;align-items:center;justify-content:space-between}.close{border:0;background:transparent;font-size:22px;color:#80909a}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.formgrid .full{grid-column:1/-1}.field textarea{min-height:78px;resize:vertical}.modalfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,16px);opacity:0;background:#163848;color:white;padding:12px 18px;border-radius:8px;z-index:20;transition:.2s;pointer-events:none}.toast.on{opacity:1;transform:translate(-50%,0)}
-@media(max-width:760px){.top{padding:0 14px}.email-label{display:none}.content{padding:20px 13px}.stats{grid-template-columns:repeat(2,1fr);gap:8px}.titlebar{align-items:center}.titlebar h1{font-size:21px}.title-actions{flex-wrap:wrap;justify-content:flex-end}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:auto}.tabs{padding:9px}.tools>*{flex:1}.search{min-width:100%}}.panel{background:transparent;border:0;border-radius:0;overflow:visible}.tabs{gap:5px;border:0;padding:12px 0 10px;overflow:auto}.tab{background:#fff;border:1px solid #d9e1ee;color:#26364a;padding:9px 12px;border-radius:8px;font-size:13px}.tab.active{background:#3b67ed;border-color:#3b67ed;color:#fff;font-weight:700}.tools{padding:8px 0 16px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;border:0}.filter-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#425a7b}.filter-field input,.filter-field select{height:38px;min-width:96px;width:112px;border:1px solid #cbd6e5;border-radius:8px;padding:8px 12px;background:#fff}.filter-field:has(#groupFilter) select{width:171px}.filter-field .search{width:96px;min-width:96px;flex:none}.tablewrap{overflow:auto;border:1px solid #dce3ef;border-radius:11px;background:#fff}th{background:#f8fafc;color:#63748f;padding:14px 15px}td{border-top:1px solid #edf1f7}
+@media(max-width:760px){.top{padding:0 14px}.email-label{display:none}.content{padding:20px 13px}.stats{grid-template-columns:repeat(2,1fr);gap:8px}.titlebar{align-items:center}.titlebar h1{font-size:21px}.title-actions{flex-wrap:wrap;justify-content:flex-end}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:auto}.tabs{padding:9px}.tools>*{flex:1}.search{min-width:100%}}.panel{background:transparent;border:0;border-radius:0;overflow:visible}.tabs{gap:5px;border:0;padding:12px 0 10px;overflow:auto}.tab{background:#fff;border:1px solid #d9e1ee;color:#26364a;padding:9px 12px;border-radius:8px;font-size:13px}.tab.active{background:#3b67ed;border-color:#3b67ed;color:#fff;font-weight:700}.tools{padding:8px 0 16px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;border:0}.filter-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#425a7b}.filter-field input,.filter-field select{height:38px;min-width:96px;width:112px;border:1px solid #cbd6e5;border-radius:8px;padding:8px 12px;background:#fff}.filter-field:has(#groupFilter) select{width:171px}.filter-field .search{width:96px;min-width:96px;flex:none}.tablewrap{overflow:auto;border:1px solid #dce3ef;border-radius:11px;background:#fff}th{background:#f8fafc;color:#63748f;padding:14px 15px}td{border-top:1px solid #edf1f7}.gestus-logo{display:inline-block;color:#050505;font-family:Arial,sans-serif;font-size:23px;font-weight:800;letter-spacing:.16em;line-height:1;border-bottom:2px solid #050505;padding:0 0 4px}.topbrand .gestus-logo{font-size:19px;letter-spacing:.13em}.brand .gestus-logo{font-size:25px;letter-spacing:.17em}
+
 </style>
 </head>
 <body>
 <section class="authscreen" id="authScreen">
   <div class="authcard">
-    <div class="brand"><div class="logo">R</div><span>RouteDesk</span></div>
+    <div class="brand"><span class="gestus-logo">GESTUS</span></div>
     <div id="loginPanel">
       <h1>Sign in to your team</h1>
-      <p>Use the email address where you received your RouteDesk invitation. We’ll send you a secure sign-in link.</p>
+      <p>Use your team invitation email. We’ll send you a secure sign-in link.</p>
       <form id="loginForm">
         <div class="field"><label for="loginEmail">Work email</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="name@company.com"></div>
         <button class="primary widebtn" type="submit" id="loginButton">Send sign-in link</button>
       </form>
       <div class="message" id="loginMessage" aria-live="polite"></div>
       <button class="linkbtn" id="showBootstrap" type="button">Set up the first team administrator</button>
-      <div class="authnote">RouteDesk is invite-only. Ask the team administrator to invite your email.</div>
+      <div class="authnote">This workspace is invite-only. Ask the team administrator to invite your email.</div>
     </div>
     <div id="bootstrapPanel" class="hidden">
       <h1>Set up the team owner</h1>
@@ -60,7 +60,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 </section>
 <div class="app-shell" id="appShell">
   <header class="top">
-    <div class="topbrand"><div class="logo">R</div>RouteDesk</div>
+    <div class="topbrand"><span class="gestus-logo">GESTUS</span></div>
     <div class="topright"><span class="email-label" id="userEmail"></span><button class="secondary hidden" id="teamButton">＋ Invite colleague</button><button class="secondary" id="signOut">Sign out</button></div>
   </header>
   <main class="content">
