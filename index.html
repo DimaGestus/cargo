@@ -124,7 +124,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
   <div class="modalhead"><h2>Offer a price</h2><button class="close" data-close="priceModal">×</button></div><p id="priceFor"></p>
   <form id="priceForm"><div class="field"><label for="priceValue">Transport price (€)</label><input id="priceValue" type="number" min="0.01" step="0.01" required placeholder="1850"></div><div class="modalfoot"><button class="secondary" type="button" data-close="priceModal">Cancel</button><button class="primary" type="submit">Save price</button></div></form>
 </div></div>
-<div class="modal" id="chatModal"><div class="modalbox wide"><div class="modalhead"><h2 id="chatTitle">Cargo chat</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><p id="chatSubtitle">Message the cargo owner about this request.</p><div class="chat-messages" id="chatMessages" aria-live="polite"></div><div class="chat-status" id="chatStatus" aria-live="polite"></div><form class="chat-form" id="chatForm"><textarea id="chatInput" maxlength="2000" required placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div>
+<div class="modal" id="chatModal"><div class="modalbox wide"><div class="modalhead"><h2 id="chatTitle">Cargo chat</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><p id="chatSubtitle">Private chat about this request.</p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div class="chat-messages" id="chatMessages" aria-live="polite"></div><div class="chat-status" id="chatStatus" aria-live="polite"></div><form class="chat-form" id="chatForm"><textarea id="chatInput" maxlength="2000" required placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div>
 <div class="toast" id="toast">Done</div>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.2";
@@ -133,7 +133,7 @@ const SUPABASE_KEY="sb_publishable_i1zo2QM56j7BsXVaS2hvzg_5Nq-N-ne";
 const WORKSPACE_ID="4dc0b1f4-0870-49cc-acbd-52003431ba2a";
 const APP_URL="https://dimagestus.github.io/cargo/";
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-let currentUser=null,currentRole="",requests=[],activeRequest=null,currentChatRequest=null,currentChatChannel=null;
+let currentUser=null,currentRole="",requests=[],activeRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
 const escapeHtml=value=>String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 function toast(message){el("toast").textContent=message;el("toast").classList.add("on");setTimeout(()=>el("toast").classList.remove("on"),2200)}
@@ -234,34 +234,57 @@ function openCargoMap(row){
 }
 function renderChatMessages(items){
   const box=el("chatMessages");
-  box.innerHTML=items.map(item=>'<div class="chat-message '+(item.sender_id===currentUser.id?"own":"")+'"><div class="chat-meta">'+escapeHtml(item.sender_id===currentUser.id?"You":"Team member · "+String(item.sender_id).slice(0,8))+" · "+escapeHtml(new Date(item.created_at).toLocaleString())+'</div><div class="chat-body">'+escapeHtml(item.message)+'</div></div>').join("")||'<div class="empty">No messages yet. Start the conversation about this load.</div>';
+  box.innerHTML=items.map(item=>'<div class="chat-message '+(item.sender_id===currentUser.id?"own":"")+'"><div class="chat-meta">'+escapeHtml(item.sender_id===currentUser.id?"You":item.sender_id===currentChatRequest.created_by?"Cargo owner":"Colleague · "+String(item.sender_id).slice(0,8))+" · "+escapeHtml(new Date(item.created_at).toLocaleString())+'</div><div class="chat-body">'+escapeHtml(item.message)+'</div></div>').join("")||'<div class="empty">No messages in this private conversation yet.</div>';
   box.scrollTop=box.scrollHeight;
+}
+async function loadChatThreads(){
+  const row=currentChatRequest;if(!row)return;
+  const selector=el("chatThread"),formEnabled=row.created_by!==currentUser.id||!!currentChatPeer;
+  if(row.created_by!==currentUser.id){
+    currentChatPeer=row.created_by;selector.classList.add("hidden");selector.innerHTML="";
+  }else{
+    const {data,error}=await db.from("transport_messages").select("sender_id,recipient_id").eq("request_id",row.id).order("created_at",{ascending:false});
+    if(error){el("chatStatus").textContent="Could not load conversations: "+error.message;return}
+    const peers=[...new Set((data||[]).map(item=>item.sender_id===row.created_by?item.recipient_id:item.sender_id).filter(id=>id&&id!==row.created_by))];
+    const previous=currentChatPeer;
+    currentChatPeer=peers.includes(previous)?previous:(peers[0]||null);
+    selector.innerHTML=peers.map(id=>'<option value="'+escapeHtml(id)+'">Colleague · '+escapeHtml(String(id).slice(0,8))+'</option>').join("");
+    selector.classList.toggle("hidden",peers.length===0);selector.disabled=peers.length===0;
+    if(currentChatPeer)selector.value=currentChatPeer;
+    if(peers.length===0)el("chatStatus").textContent="No one has started a private conversation about this load yet.";
+  }
+  el("chatInput").disabled=!currentChatPeer;
+  el("sendChatMessage").disabled=!currentChatPeer;
+  return formEnabled;
 }
 async function loadChatMessages(){
   if(!currentChatRequest)return;
-  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,message,created_at").eq("request_id",currentChatRequest.id).order("created_at",{ascending:true}).order("id",{ascending:true});
+  if(!currentChatPeer){renderChatMessages([]);return}
+  const filter="and(sender_id.eq."+currentUser.id+",recipient_id.eq."+currentChatPeer+"),and(sender_id.eq."+currentChatPeer+",recipient_id.eq."+currentUser.id+")";
+  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("request_id",currentChatRequest.id).or(filter).order("created_at",{ascending:true}).order("id",{ascending:true});
   if(error){el("chatStatus").textContent="Could not load messages: "+error.message;return}
   renderChatMessages(data||[]);
 }
 async function openChat(requestId){
   const row=requests.find(item=>String(item.id)===String(requestId));if(!row)return;
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
-  currentChatRequest=row;
-  el("chatTitle").textContent="Cargo chat · request #"+row.id;
-  el("chatSubtitle").textContent=(row.created_by===currentUser.id?"You posted this load. Your team can discuss it here.":"Message the cargo owner and team about this load.")+" · "+row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
+  currentChatRequest=row;currentChatPeer=row.created_by===currentUser.id?null:row.created_by;
+  el("chatTitle").textContent="Private cargo chat · request #"+row.id;
+  el("chatSubtitle").textContent=(row.created_by===currentUser.id?"Choose a colleague conversation. Only you and that colleague can read it.":"Private messages to the cargo owner. Only you and the owner can read this conversation.")+" · "+row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
   el("chatStatus").textContent="";el("chatInput").value="";el("chatMessages").innerHTML='<div class="empty">Loading messages…</div>';el("chatModal").classList.add("show");
-  await loadChatMessages();
-  currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},()=>loadChatMessages()).subscribe();
+  await loadChatThreads();await loadChatMessages();
+  currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},async()=>{await loadChatThreads();await loadChatMessages()}).subscribe();
 }
+el("chatThread").onchange=async event=>{currentChatPeer=event.target.value||null;el("chatStatus").textContent="";await loadChatMessages();el("chatInput").disabled=!currentChatPeer;el("sendChatMessage").disabled=!currentChatPeer};
 async function closeChat(){
-  el("chatModal").classList.remove("show");currentChatRequest=null;
+  el("chatModal").classList.remove("show");currentChatRequest=null;currentChatPeer=null;
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
 }
 el("chatForm").onsubmit=async event=>{
   event.preventDefault();if(!currentChatRequest)return;
   const message=el("chatInput").value.trim();if(!message)return;
   const send=el("sendChatMessage");send.disabled=true;el("chatStatus").textContent="Sending…";
-  const {error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,message});
+  const {error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,recipient_id:currentChatPeer,message});
   send.disabled=false;
   if(error){el("chatStatus").textContent="Could not send message: "+error.message;return}
   el("chatInput").value="";el("chatStatus").textContent="";await loadChatMessages();el("chatInput").focus();
