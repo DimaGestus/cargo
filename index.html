@@ -220,7 +220,7 @@ el("requestForm").onsubmit=async event=>{
 };
 function cargoCopyText(row){
   const route=(country,postcode,city)=>[country,postcode,city].filter(Boolean).join(" ");
-  return ["Request #"+row.id,row.client?"Customer: "+row.client:"", "Loading: "+route(row.loading_country,row.loading_postcode,row.loading_city), "Delivery: "+route(row.delivery_country,row.delivery_postcode,row.delivery_city), "Loading date: "+(row.pickup_date||""), "Cargo: "+[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",row.pallet_count?row.pallet_count+" pallets":""].filter(Boolean).join(" · "), row.price_eur?"Price: "+Number(row.price_eur).toLocaleString("en-US")+" €":"", row.note?"Note: "+row.note:""].filter(Boolean).join("\n");
+  return ["Loading: "+route(row.loading_country,row.loading_postcode,row.loading_city)+" → Unloading: "+route(row.delivery_country,row.delivery_postcode,row.delivery_city), row.client?"Customer: "+row.client:"", "Date: "+(row.pickup_date||""), "Cargo: "+[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",row.pallet_count?row.pallet_count+" pallets":""].filter(Boolean).join(" · "), row.price_eur?"Price: "+Number(row.price_eur).toLocaleString("en-US")+" €":"", row.note?"Note: "+row.note:""].filter(Boolean).join("\n");
 }
 async function copyCargo(row){
   const text=cargoCopyText(row);
