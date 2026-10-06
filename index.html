@@ -108,7 +108,8 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
     <div class="field"><label for="cargoType">Cargo</label><select id="cargoType" required><option value="" selected disabled>Select cargo type</option><option>Refrigerator</option><option>Tautliner</option><option>Tilt Truck</option><option>MEGA</option><option>JUMBO</option></select></div>
     <div class="field"><label for="temperature">Temperature</label><input id="temperature" placeholder="-18°C"></div>
     <div class="field"><label for="weight">Weight (kg)</label><input id="weight" type="number" min="0" step="0.01"></div>
-    <div class="field"><label for="pallets">Pallets</label><input id="pallets" type="number" min="0" step="1"></div>
+    <div class="field"><label for="palletMode">Pallets</label><select id="palletMode"><option value="">Select pallet info</option><option value="exchange">Pallets to change</option><option value="count">Enter pallet count</option></select></div>
+    <div class="field" id="palletCountField" style="display:none"><label for="pallets">Pallet count</label><input id="pallets" type="number" min="0" step="1"></div>
     <div class="field"><label for="client">Customer</label><input id="client" placeholder="Company name"></div>
     <div class="field full"><label for="requestNote">Note</label><textarea id="requestNote" placeholder="Loading window, special instructions…"></textarea></div>
   </div><div class="modalfoot"><button class="secondary" type="button" data-close="requestModal">Cancel</button><button class="primary" id="saveRequest" type="submit">Save request</button></div></form>
@@ -135,6 +136,8 @@ const APP_URL="https://dimagestus.github.io/cargo/";
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentUser=null,currentRole="",requests=[],activeRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
+el("palletMode").addEventListener("change",()=>{el("palletCountField").style.display=el("palletMode").value==="count"?"flex":"none";if(el("palletMode").value!=="count")el("pallets").value="";});
+function palletLabel(row){return Number(row.pallet_count)===-1?"Pallets to change":palletLabel(row);}
 const escapeHtml=value=>String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 function toast(message){el("toast").textContent=message;el("toast").classList.add("on");setTimeout(()=>el("toast").classList.remove("on"),2200)}
 function showMessage(id,message,error){const node=el(id);node.textContent=message;node.classList.toggle("error",!!error)}
@@ -212,7 +215,7 @@ el("requestForm").onsubmit=async event=>{
   event.preventDefault();const from=el("fromCountry").value.trim().toUpperCase(),to=el("toCountry").value.trim().toUpperCase();
   if(!/^[A-Z]{2}$/.test(from)||!/^[A-Z]{2}$/.test(to)){toast("Enter two-letter country codes.");return}
   el("saveRequest").disabled=true;
-  const record={workspace_id:WORKSPACE_ID,created_by:currentUser.id,loading_country:from,loading_postcode:el("fromPostcode").value.trim(),loading_city:el("fromCity").value.trim(),delivery_country:to,delivery_postcode:el("toPostcode").value.trim(),delivery_city:el("toCity").value.trim(),pickup_date:el("pickupDate").value,cargo_type:el("cargoType").value.trim(),temperature:el("temperature").value.trim()||null,weight_kg:el("weight").value?Number(el("weight").value):null,pallet_count:el("pallets").value?Number(el("pallets").value):null,client:el("client").value.trim()||null,note:el("requestNote").value.trim()||null};
+  const record={workspace_id:WORKSPACE_ID,created_by:currentUser.id,loading_country:from,loading_postcode:el("fromPostcode").value.trim(),loading_city:el("fromCity").value.trim(),delivery_country:to,delivery_postcode:el("toPostcode").value.trim(),delivery_city:el("toCity").value.trim(),pickup_date:el("pickupDate").value,cargo_type:el("cargoType").value.trim(),temperature:el("temperature").value.trim()||null,weight_kg:el("weight").value?Number(el("weight").value):null,pallet_count:el("palletMode").value==="exchange"?-1:(el("palletMode").value==="count"&&el("pallets").value?Number(el("pallets").value):null),client:el("client").value.trim()||null,note:el("requestNote").value.trim()||null};
   const {error}=await db.from("transport_requests").insert(record);
   el("saveRequest").disabled=false;
   if(error){toast("Could not save request: "+error.message);return}
