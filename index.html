@@ -109,7 +109,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
     <div class="field"><label for="cargoType">Cargo</label><select id="cargoType" required><option value="" selected disabled>Select cargo type</option><option>Refrigerator</option><option>Tautliner</option><option>Tilt Truck</option><option>MEGA</option><option>JUMBO</option></select></div>
     <div class="field"><label for="temperature">Temperature</label><input id="temperature" placeholder="-18°C"></div>
     <div class="field"><label for="weight">Weight (kg)</label><input id="weight" type="number" min="0" step="0.01"></div>
-    <div class="field"><label for="pallets">Pallets</label><div class="pallet-controls"><input id="pallets" type="number" min="0" step="1" placeholder="Quantity"><select id="palletExchange"><option value="">No selection</option><option value="true">Pallets to change</option></select></div></div>
+    <div class="field"><label for="pallets">Pallets</label><div class="pallet-controls"><input id="pallets" type="number" min="0" step="1" placeholder="Quantity"><select id="palletExchange" required><option value="false">No change</option><option value="true">Pallets to change</option></select></div></div>
     <div class="field"><label for="client">Customer</label><input id="client" placeholder="Company name"></div>
     <div class="field full"><label for="requestNote">Note</label><textarea id="requestNote" placeholder="Loading window, special instructions…"></textarea></div>
   </div><div class="modalfoot"><button class="secondary" type="button" data-close="requestModal">Cancel</button><button class="primary" id="saveRequest" type="submit">Save request</button></div></form>
@@ -136,7 +136,7 @@ const APP_URL="https://dimagestus.github.io/cargo/";
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
-function palletLabel(row){const count=Number(row.pallet_count)>0?row.pallet_count+" pallets":"";const exchange=(row.pallet_exchange||Number(row.pallet_count)===-1)?"Pallets to change":"";return [count,exchange].filter(Boolean).join(", ");}
+function palletLabel(row){const count=Number(row.pallet_count)>0?row.pallet_count+" pallets":"";const exchange=(row.pallet_exchange||Number(row.pallet_count)===-1)?"Pallets to change":"No change";return [count,exchange].filter(Boolean).join(", ");}
 const escapeHtml=value=>String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 function toast(message){el("toast").textContent=message;el("toast").classList.add("on");setTimeout(()=>el("toast").classList.remove("on"),2200)}
 function showMessage(id,message,error){const node=el(id);node.textContent=message;node.classList.toggle("error",!!error)}
