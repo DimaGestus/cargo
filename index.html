@@ -28,7 +28,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .empty{text-align:center;padding:40px;color:#8a969d}.pages{display:flex;justify-content:space-between;padding:14px 17px;color:#83919a;font-size:12px;border-top:1px solid var(--line)}
 .modal{position:fixed;inset:0;z-index:12;background:#10253466;display:none;place-items:center;padding:18px}.modal.show{display:grid}.modalbox{width:min(480px,100%);max-height:min(92vh,850px);overflow:auto;background:#fff;border-radius:13px;padding:23px;box-shadow:0 20px 80px #122b3b33}.modalbox.wide{width:min(760px,100%)}.modalbox h2{margin:0 0 7px;font-size:19px}.modalbox p{color:#71818b;font-size:13px;margin:0 0 19px}.modalhead{display:flex;align-items:center;justify-content:space-between}.close{border:0;background:transparent;font-size:22px;color:#80909a}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.formgrid .full{grid-column:1/-1}.field textarea{min-height:78px;resize:vertical}.modalfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,16px);opacity:0;background:#163848;color:white;padding:12px 18px;border-radius:8px;z-index:20;transition:.2s;pointer-events:none}.toast.on{opacity:1;transform:translate(-50%,0)}
-@media(max-width:760px){.top{padding:0 14px}.email-label{display:none}.content{padding:20px 13px}.stats{grid-template-columns:repeat(2,1fr);gap:8px}.titlebar{align-items:center}.titlebar h1{font-size:21px}.title-actions{flex-wrap:wrap;justify-content:flex-end}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:auto}.tabs{padding:9px}.tools>*{flex:1}.search{min-width:100%}}
+@media(max-width:760px){.top{padding:0 14px}.email-label{display:none}.content{padding:20px 13px}.stats{grid-template-columns:repeat(2,1fr);gap:8px}.titlebar{align-items:center}.titlebar h1{font-size:21px}.title-actions{flex-wrap:wrap;justify-content:flex-end}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:auto}.tabs{padding:9px}.tools>*{flex:1}.search{min-width:100%}}.panel{background:transparent;border:0;border-radius:0;overflow:visible}.tabs{gap:5px;border:0;padding:12px 0 10px;overflow:auto}.tab{background:#fff;border:1px solid #d9e1ee;color:#26364a;padding:9px 12px;border-radius:8px;font-size:13px}.tab.active{background:#3b67ed;border-color:#3b67ed;color:#fff;font-weight:700}.tools{padding:8px 0 16px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;border:0}.filter-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#425a7b}.filter-field input,.filter-field select{height:38px;min-width:96px;width:112px;border:1px solid #cbd6e5;border-radius:8px;padding:8px 12px;background:#fff}.filter-field:has(#groupFilter) select{width:171px}.filter-field .search{width:96px;min-width:96px;flex:none}.tablewrap{overflow:auto;border:1px solid #dce3ef;border-radius:11px;background:#fff}th{background:#f8fafc;color:#63748f;padding:14px 15px}td{border-top:1px solid #edf1f7}
 </style>
 </head>
 <body>
@@ -76,17 +76,20 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
     </div>
     <section class="panel">
       <div class="tabs" id="tabs">
-        <button class="tab active" data-status="All">All <span class="count">0</span></button>
-        <button class="tab" data-status="Waiting for price">Waiting for price <span class="count">0</span></button>
-        <button class="tab" data-status="Price sent">Price sent <span class="count">0</span></button>
-        <button class="tab" data-status="Accepted">Accepted <span class="count">0</span></button>
-        <button class="tab" data-status="Declined">Declined <span class="count">0</span></button>
+        <button class="tab active" data-status="Waiting for price">Waiting for price</button>
+        <button class="tab" data-status="Price sent">Price sent</button>
+        <button class="tab" data-status="Accepted">Accepted</button>
+        <button class="tab" data-status="Declined">Declined</button>
+        <button class="tab" data-status="All">All</button>
       </div>
       <div class="tools">
-        <input class="search" id="query" placeholder="Search by request, city, or customer">
-        <select id="statusFilter" class="filter"><option value="">All statuses</option><option>Waiting for price</option><option>Price sent</option><option>Accepted</option><option>Declined</option></select>
-        <input id="loadCountry" class="filter" maxlength="2" placeholder="Loading country">
-        <input id="deliveryCountry" class="filter" maxlength="2" placeholder="Delivery country">
+        <label class="filter-field"><span>Search</span><input class="search" id="query" placeholder="00000"></label>
+        <select id="statusFilter" class="filter hidden"><option value="">All statuses</option><option>Waiting for price</option><option>Price sent</option><option>Accepted</option><option>Declined</option></select>
+        <label class="filter-field"><span>Group</span><select id="groupFilter" class="filter"><option>Europe</option></select></label>
+        <label class="filter-field"><span>Loading Country</span><input id="loadCountry" class="filter" maxlength="2" placeholder=""></label>
+        <label class="filter-field"><span>Loading Postcode</span><input id="loadPostcode" class="filter" placeholder=""></label>
+        <label class="filter-field"><span>Delivery Country</span><input id="deliveryCountry" class="filter" maxlength="2" placeholder=""></label>
+        <label class="filter-field"><span>Delivery Postcode</span><input id="deliveryPostcode" class="filter" placeholder=""></label>
       </div>
       <div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">Loading requests…</td></tr></tbody></table></div>
       <div class="pages"><span id="pageText">0 requests</span><button class="secondary" id="refreshRequests">Refresh list</button></div>
