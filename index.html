@@ -137,7 +137,7 @@ const db=createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentUser=null,currentRole="",requests=[],activeRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
 el("palletMode").addEventListener("change",()=>{el("palletCountField").style.display=el("palletMode").value==="count"?"flex":"none";if(el("palletMode").value!=="count")el("pallets").value="";});
-function palletLabel(row){return Number(row.pallet_count)===-1?"Pallets to change":palletLabel(row);}
+function palletLabel(row){return Number(row.pallet_count)===-1?"Pallets to change":row.pallet_count?row.pallet_count+" pallets":"";}
 const escapeHtml=value=>String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 function toast(message){el("toast").textContent=message;el("toast").classList.add("on");setTimeout(()=>el("toast").classList.remove("on"),2200)}
 function showMessage(id,message,error){const node=el(id);node.textContent=message;node.classList.toggle("error",!!error)}
@@ -151,7 +151,7 @@ function renderRequests(){
   const filtered=requests.filter(row=>(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&(!load||row.loading_country.startsWith(load))&&(!delivery||row.delivery_country.startsWith(delivery)));
   el("rows").innerHTML=filtered.map(row=>{
     const owner=initials(row.creator_email);
-    const cargo=[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",row.pallet_count?row.pallet_count+" pallets":""].filter(Boolean).map(escapeHtml).join(" • ");
+    const cargo=[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).map(escapeHtml).join(" • ");
     const route='<b>'+countryFlag(row.loading_country)+'</b> '+escapeHtml(row.loading_postcode)+' <small style="display:inline">'+escapeHtml(row.loading_city)+'</small><span class="arrow">→</span><b>'+countryFlag(row.delivery_country)+'</b> '+escapeHtml(row.delivery_postcode)+' <small style="display:inline">'+escapeHtml(row.delivery_city)+'</small><small>'+dateLabel(row.pickup_date)+(row.note?" · "+escapeHtml(row.note):"")+'</small>';
     const price=row.price_eur?'<button class="action price" data-price="'+row.id+'">'+Number(row.price_eur).toLocaleString("en-US")+" €</button>":'<button class="action price" data-price="'+row.id+'">＋ Price</button>';
     const next=row.status==="Accepted"||row.status==="Declined"?"":'<button class="action" data-status="'+row.id+'" data-next="'+(row.status==="Price sent"?"Accepted":"Declined")+'">'+(row.status==="Price sent"?"✓ Accept":"× Decline")+'</button>';
@@ -223,7 +223,7 @@ el("requestForm").onsubmit=async event=>{
 };
 function cargoCopyText(row){
   const route=(country,postcode,city)=>[country,postcode,city].filter(Boolean).join(" ");
-  return ["Loading: "+route(row.loading_country,row.loading_postcode,row.loading_city)+" → Unloading: "+route(row.delivery_country,row.delivery_postcode,row.delivery_city), row.client?"Customer: "+row.client:"", "Date: "+(row.pickup_date||""), "Cargo: "+[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",row.pallet_count?row.pallet_count+" pallets":""].filter(Boolean).join(" · "), row.price_eur?"Price: "+Number(row.price_eur).toLocaleString("en-US")+" €":"", row.note?"Note: "+row.note:""].filter(Boolean).join("\n");
+  return ["Loading: "+route(row.loading_country,row.loading_postcode,row.loading_city)+" → Unloading: "+route(row.delivery_country,row.delivery_postcode,row.delivery_city), row.client?"Customer: "+row.client:"", "Date: "+(row.pickup_date||""), "Cargo: "+[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).join(" · "), row.price_eur?"Price: "+Number(row.price_eur).toLocaleString("en-US")+" €":"", row.note?"Note: "+row.note:""].filter(Boolean).join("\n");
 }
 async function copyCargo(row){
   const text=cargoCopyText(row);
