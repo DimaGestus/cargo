@@ -42,6 +42,8 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .department-nav{display:flex;align-items:center;gap:6px;margin-left:20px}.department-tab{border:0;border-radius:10px;background:#eff5ff;color:#245ef3;padding:10px 16px;font-weight:650}.department-tab.active{background:#245ef3;color:#fff}.admin-badge{font-size:12px;color:var(--muted);margin-right:4px}@media(max-width:760px){.department-nav{margin-left:0}.topbar{flex-wrap:wrap}.department-tab{padding:8px 12px}}
 .status.received{color:#178b49;background:#dcfce7}.status.no-price{color:#64748b;background:#eef2f6}.status.sent{color:#2457bd;background:#dbeafe}.status.waiting{color:#b87812;background:#fff1c2}.status.accepted{color:#12854a;background:#d9f7e4}.status.declined{color:#c34c52;background:#fee2e2}tr.request-received{background:#f1fff6}tr.request-accepted{background:#f3fcf7}tr.request-declined{background:#fff8f8}.status-cell{min-width:135px}.status-price{color:#008f7b;font-size:12px;font-weight:650;margin-top:6px}.row-status-select{max-width:145px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:white;font-size:12px}.filter-field select.sent{color:#2457bd;background:#eff6ff}.filter-field select.received,.filter-field select.accepted{color:#178b49;background:#f0fff5}.filter-field select.waiting{color:#b87812;background:#fff9e9}.filter-field select.declined{color:#c34c52;background:#fff1f2}.filter-field select.no-price{color:#64748b;background:#f1f5f9}.owner-label{margin-top:5px;color:#687984;font-size:11px}
 #ownerFilter{width:170px}#statusFilter{width:175px}.row-status-select{min-width:120px}
+
+.ai-primary{background:#2563eb;color:#fff;border:1px solid #2563eb;border-radius:8px;padding:11px 17px;font-weight:650}.ai-primary:disabled{opacity:.55;cursor:wait}.freight-modal{top:68px;background:#f7f9fb;z-index:40;padding:24px;align-items:flex-start;overflow-y:auto}.freight-page{width:min(800px,100%);margin:0 auto 40px}.freight-page h2{font-size:21px;margin:23px 0}.freight-back{border:0;background:none;color:#65788b;padding:0}.freight-card{border:1px solid #e2e8f0;border-radius:11px;padding:22px;background:#fff}.freight-card h3{font-size:15px;font-weight:650;margin:0 0 18px}.freight-label,.freight-stop label,.freight-cargo-grid label{display:block;color:#43576b;font-size:12px;margin-bottom:10px}.freight-card input:not([type=checkbox]),.freight-card select,.freight-card textarea{display:block;width:100%;border:1px solid #ccd7e3;border-radius:7px;padding:10px;background:#fff;margin-top:5px;font-size:13px}.freight-card input[type=checkbox]{vertical-align:middle;accent-color:#2563eb}.transport-types{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px}.transport-types button{border:1px solid #d5deea;border-radius:20px;background:#fff;padding:7px 12px;font-size:12px}.transport-types button.active{background:#2563eb;color:white;border-color:#2563eb}.stops-columns{display:grid;grid-template-columns:1fr 1fr;gap:20px}.stops-columns h3{border-bottom:1px solid #e7edf3;padding-bottom:12px;margin-bottom:12px}.freight-stop{background:#f8fafc;padding:10px;border-radius:7px;margin-bottom:12px;border:1px solid #e8eef4}.stop-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#60758c;margin-bottom:9px}.stop-head button{border:0;background:none;color:#8ba0b8;padding:3px 5px}.stop-head button:disabled{opacity:.3}.stop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed-label{display:flex!important;align-items:center}.time-range{display:flex;gap:10px}.time-range label{width:50%}.add-stop{width:100%;border:1px dashed #b7d0ef;background:white;border-radius:6px;padding:9px;color:#2563eb;font-size:12px}.cargo-heading{margin-top:28px!important;padding-bottom:12px;border-bottom:1px solid #e7edf3}.freight-cargo-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}.exchange-label{white-space:nowrap;padding-bottom:10px}.freight-card textarea{min-height:70px;resize:vertical}.transport-group-field{border-top:1px solid #e7edf3;padding-top:17px;margin-top:20px}.transport-group-field small{font-size:11px;color:#8494a8}.freight-buttons{display:flex;gap:10px;margin-top:16px}.ai-label{display:flex;justify-content:space-between;gap:10px;font-size:13px}.ai-label small{font-size:11px;color:#8ba0b8}#aiRequestText{min-height:240px}.ai-disclosure{font-size:11px;color:#738396;margin:10px 0}.ai-images{display:flex;gap:10px;margin-top:10px}.ai-images>div{position:relative}.ai-images img{width:90px;height:70px;object-fit:cover;border-radius:6px}.ai-images button{position:absolute;right:0;top:0;border:0;background:white;border-radius:50%}.route-stops{display:flex;gap:10px;align-items:center}.route-stops>div{display:grid;gap:6px}@media(max-width:650px){.freight-modal{top:68px;padding:15px}.stops-columns{grid-template-columns:1fr}.freight-card{padding:15px}.freight-cargo-grid{grid-template-columns:1fr 1fr}.ai-label{display:block}.title-actions{flex-wrap:wrap}.route-stops{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -79,7 +81,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
   <main class="content">
     <div class="titlebar">
       <div><h1>GESTUS Team transport requests</h1></div>
-      <div class="title-actions"><button class="primary" id="newRequest">＋ New request</button></div>
+      <div class="title-actions"><button class="ai-primary hidden" id="aiRequest">♧ AI Request</button><button class="secondary hidden" id="manualRequest">✎ Manual Request</button><button class="primary" id="newRequest">＋ New request</button></div>
     </div>
     <section class="panel">
       <div class="tabs" id="tabs">
@@ -105,26 +107,35 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
     </section>
   </main>
 </div>
-<div class="modal" id="requestModal"><div class="modalbox wide">
-  <div class="modalhead"><h2 id="requestTitle">New transport request</h2><button class="close" data-close="requestModal">×</button></div>
-  <p>Enter the route and cargo details. Your team will see the request as soon as it is saved.</p>
-  <form id="requestForm"><div class="formgrid">
-    <div class="field"><label for="fromCountry">Loading country code</label><input id="fromCountry" maxlength="2" pattern="[A-Za-z]{2}" placeholder="SK" required></div>
-    <div class="field"><label for="fromPostcode">Loading postcode</label><input id="fromPostcode" required></div>
-    <div class="field"><label for="fromCity">Loading city</label><input id="fromCity" required></div>
-    <div class="field"><label for="pickupDate">Loading date</label><input id="pickupDate" type="date" required></div>
-    <div class="field"><label for="toCountry">Delivery country code</label><input id="toCountry" maxlength="2" pattern="[A-Za-z]{2}" placeholder="ES" required></div>
-    <div class="field"><label for="toPostcode">Delivery postcode</label><input id="toPostcode" required></div>
-    <div class="field"><label for="toCity">Delivery city</label><input id="toCity" required></div>
-    <div class="field"><label for="deliveryDate">Delivery date</label><input id="deliveryDate" type="date" required></div>
-    <div class="field"><label for="cargoType">Cargo</label><select id="cargoType" required><option value="" selected disabled>Select cargo type</option><option>Refrigerator</option><option>Tautliner</option><option>Tilt Truck</option><option>MEGA</option><option>JUMBO</option></select></div>
-    <div class="field"><label for="temperature">Temperature</label><input id="temperature" placeholder="-18°C"></div>
-    <div class="field"><label for="weight">Weight (kg)</label><input id="weight" type="number" min="0" step="0.01"></div>
-    <div class="field"><label for="pallets">Pallets</label><div class="pallet-controls"><input id="pallets" type="number" min="0" step="1" placeholder="Quantity"><select id="palletExchange" required><option value="false">No change</option><option value="true">Pallets to change</option></select></div></div>
-    <div class="field"><label for="client">Customer</label><input id="client" placeholder="Company name"></div>
-    <div class="field full"><label for="requestNote">Note</label><textarea id="requestNote" placeholder="Loading window, special instructions…"></textarea></div>
-  </div><div class="modalfoot"><button class="secondary" type="button" data-close="requestModal">Cancel</button><button class="primary" id="saveRequest" type="submit">Save request</button></div></form>
-</div></div>
+<div class="modal freight-modal" id="requestModal"><div class="freight-page">
+<button type="button" class="freight-back" data-close="requestModal">← Back</button>
+<h2 id="requestTitle">New Freight Request</h2>
+<section id="aiRequestPanel" class="freight-card hidden">
+<div class="ai-label"><label for="aiRequestText">Paste email or write request details</label><small>Ctrl + V to paste images</small></div>
+<textarea id="aiRequestText" maxlength="20000" placeholder="Paste the freight email or describe the route and cargo…"></textarea>
+<div id="aiImages" class="ai-images"></div>
+<p class="ai-disclosure">Text and images are sent to OpenAI to fill this draft. Review the details before creating the request.</p>
+<div class="message" id="aiRequestMessage" role="status"></div>
+<div class="freight-buttons"><button type="button" class="ai-primary" id="analyseRequest">✧ Analyse with AI</button><button type="button" class="secondary" id="fillManually">Fill manually</button></div>
+</section>
+<form id="requestForm" class="hidden">
+<div class="freight-card"><h3>Request Details</h3>
+<label class="freight-label">Transport Type *</label>
+<div class="transport-types" id="transportTypes"><button type="button" data-transport-type="Frigo" class="active">Frigo</button><button type="button" data-transport-type="Tautliner" class="">Tautliner</button><button type="button" data-transport-type="Double Decker" class="">Double Decker</button><button type="button" data-transport-type="Mega" class="">Mega</button><button type="button" data-transport-type="Road Train" class="">Road Train</button></div>
+<input type="hidden" id="cargoType" value="Frigo">
+<div class="stops-columns"><section><h3>Loading Stops</h3><div id="loadingStops"></div><button type="button" class="add-stop" data-add-stop="loading">+ Add loading stop</button></section><section><h3>Delivery Stops</h3><div id="deliveryStops"></div><button type="button" class="add-stop" data-add-stop="delivery">+ Add delivery stop</button></section></div>
+<h3 class="cargo-heading">Cargo</h3><div class="freight-cargo-grid">
+<label>Temperature<input id="temperature" placeholder="-18"></label>
+<label>Weight (kg)<input id="weight" type="number" min="0" step="0.01"></label>
+<label>Pallets<input id="pallets" type="number" min="0" step="1"></label>
+<label class="exchange-label"><input id="palletExchange" type="checkbox"> Pallet exchange</label>
+</div>
+<label class="freight-label">Customer<input id="client" placeholder="Company name"></label>
+<label class="freight-label">Additional info<textarea id="requestNote"></textarea></label>
+<div class="transport-group-field"><label class="freight-label">Transport Group<select id="requestGroup"><option value="Europe">Europe</option><option value="Export">Export (LT/LV/EE/PL)</option></select></label><small>Auto-calculated from stops. Change if needed.</small></div>
+<div id="requestSaveMessage" class="message" role="status"></div></div>
+<div class="freight-buttons"><button class="secondary" type="button" data-close="requestModal">Back</button><button class="ai-primary" id="saveRequest" type="submit">▣ Create Request</button><button type="button" class="secondary hidden" id="backToSource">Back to source</button></div>
+</form></div></div>
 <div class="modal" id="inviteModal"><div class="modalbox">
   <div class="modalhead"><h2>Invite a colleague</h2><button class="close" data-close="inviteModal">×</button></div>
   <p>They’ll receive an email invitation and join the shared request list after accepting it.</p>
@@ -160,8 +171,17 @@ function initials(email){return String(email||"").split("@")[0].split(/[._-]/).f
 function dateLabel(date){if(!date)return "";const [year,month,day]=date.slice(0,10).split("-");return day+"."+month}
 function createdLabel(date){return new Date(date).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).replaceAll("/",".").replace(",","")}
 function requestGroup(row){
+  if(row.transport_group)return row.transport_group;
   const exportCountries=new Set(["LT","LV","EE","PL"]);
-  return [row.loading_country,row.delivery_country].some(country=>exportCountries.has(String(country||"").trim().toUpperCase()))?"Export":"Europe";
+  return [row.loading_country,row.delivery_country,...(row.loading_stops||[]).map(s=>s.country),...(row.delivery_stops||[]).map(s=>s.country)].some(country=>exportCountries.has(String(country||"").trim().toUpperCase()))?"Export":"Europe";
+}
+function rowStops(row,kind){
+const stops=row[kind+"_stops"];
+return stops?.length?stops:[kind==="loading"?{country:row.loading_country,postcode:row.loading_postcode,location:row.loading_city,date:row.pickup_date}:{country:row.delivery_country,postcode:row.delivery_postcode,location:row.delivery_city,date:row.delivery_date}];
+}
+function renderRouteStops(row){
+const render=stop=>'<div><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong> <strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(stop.location)+'<small>'+escapeHtml([stop.time_from?(stop.fixed_time?"Fixed: ":"")+stop.time_from+(stop.time_to&&!stop.fixed_time?"–"+stop.time_to:""):"",stop.comment].filter(Boolean).join(" · "))+'</small></div>';
+return '<div class="route-stops"><div>'+rowStops(row,"loading").map(render).join("")+'</div><span class="arrow">→</span><div>'+rowStops(row,"delivery").map(render).join("")+'</div></div>'+(row.note?'<small>'+escapeHtml(row.note)+'</small>':"");
 }
 function renderRequests(){
   const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
@@ -171,7 +191,7 @@ el("statusFilter").className="filter "+(status?statusClass(status):"");
   el("rows").innerHTML=filtered.map(row=>{
     const owner=requestOwners.find(item=>item.user_id===row.created_by)?.display_name||(row.created_by===currentUser.id?(currentUser.email||"You").split("@")[0]:"Team member");
     const cargo=[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).map(escapeHtml).join(" • ");
-    const route='<strong class="route-emphasis route-date">'+dateLabel(row.pickup_date)+'</strong> <strong class="route-emphasis route-code">'+countryFlag(row.loading_country)+' '+escapeHtml(row.loading_postcode)+'</strong> <small style="display:inline">'+escapeHtml(row.loading_city)+'</small><span class="arrow">→</span><strong class="route-emphasis route-date">'+dateLabel(row.delivery_date)+'</strong> <strong class="route-emphasis route-code">'+countryFlag(row.delivery_country)+' '+escapeHtml(row.delivery_postcode)+'</strong> <small style="display:inline">'+escapeHtml(row.delivery_city)+'</small><small>'+(row.note?escapeHtml(row.note):"")+'</small>';
+    const route=renderRouteStops(row);
     const price=row.price_eur?'<button class="action price" data-price="'+row.id+'">'+Number(row.price_eur).toLocaleString("en-US")+" €</button>":'<button class="action price" data-price="'+row.id+'">＋ Price</button>';
     const priceComment=row.price_comment?'<div class="price-comment-label">'+escapeHtml(row.price_comment)+'</div>':"";
     const next='<select class="row-status-select" data-request-status="'+row.id+'" aria-label="Status for request #'+row.id+'"><option value="" selected disabled>Status</option>'+REQUEST_STATUSES.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")+'</select>';
@@ -202,6 +222,7 @@ function setDepartment(department){
   if(!isAdmin()&&department!==currentCategory)return;
   const changed=activeDepartment!==department;
 activeDepartment=department;
+el("aiRequest").classList.toggle("hidden",department!=="sales");el("manualRequest").classList.toggle("hidden",department!=="sales");el("newRequest").classList.toggle("hidden",department==="sales");
 el("ownerFilterField").classList.toggle("hidden",department!=="sales");
 el("statusFilterField").classList.toggle("hidden",department!=="sales");
 el("tabs").classList.toggle("hidden",department==="sales");
@@ -258,28 +279,102 @@ el("inviteForm").onsubmit=async event=>{
   if(error||data?.error){showMessage("inviteMessage",data?.error||error.message||"Invitation failed.",true);return}
   showMessage("inviteMessage",data.message||("Invitation sent to "+email+" as "+(category==="sales"?"Sales":"Transport")+"."),false);el("inviteEmail").value="";setTimeout(()=>el("inviteModal").classList.remove("show"),1300);
 };
-el("newRequest").onclick=()=>{activeEditRequest=null;el("requestForm").reset();el("requestTitle").textContent="New transport request";el("saveRequest").textContent="Save request";el("deliveryDate").required=true;el("requestModal").classList.add("show")};
-el("requestForm").onsubmit=async event=>{
-  event.preventDefault();const from=el("fromCountry").value.trim().toUpperCase(),to=el("toCountry").value.trim().toUpperCase();
-  if(!/^[A-Z]{2}$/.test(from)||!/^[A-Z]{2}$/.test(to)){toast("Enter two-letter country codes.");return}
-  el("saveRequest").disabled=true;
-  const fields={loading_country:from,loading_postcode:el("fromPostcode").value.trim(),loading_city:el("fromCity").value.trim(),delivery_country:to,delivery_postcode:el("toPostcode").value.trim(),delivery_city:el("toCity").value.trim(),pickup_date:el("pickupDate").value,delivery_date:el("deliveryDate").value||null,cargo_type:el("cargoType").value.trim(),temperature:el("temperature").value.trim()||null,weight_kg:el("weight").value?Number(el("weight").value):null,pallet_count:el("pallets").value?Number(el("pallets").value):null,pallet_exchange:el("palletExchange").value==="true",client:el("client").value.trim()||null,note:el("requestNote").value.trim()||null};
-  let error=null;
-  if(activeEditRequest){
-    const result=await db.from("transport_requests").update(fields).eq("id",activeEditRequest).eq("workspace_id",WORKSPACE_ID).eq("created_by",currentUser.id).select("id").maybeSingle();
-    error=result.error;
-    if(!error&&!result.data)error=new Error("You can edit only requests you created.");
-  }else{
-    const result=await db.from("transport_requests").insert(Object.assign({workspace_id:WORKSPACE_ID,created_by:currentUser.id},fields));
-    error=result.error;
-  }
-  el("saveRequest").disabled=false;
-  if(error){toast("Could not save request: "+error.message);return}
-  const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestForm").reset();el("requestModal").classList.remove("show");await loadRequests();toast(wasEditing?"Request updated":"Request saved for the team");
+
+const COUNTRIES={AT:"Austria",BE:"Belgium",BG:"Bulgaria",CH:"Switzerland",CZ:"Czechia",DE:"Germany",DK:"Denmark",EE:"Estonia",ES:"Spain",FI:"Finland",FR:"France",GB:"United Kingdom",GR:"Greece",HR:"Croatia",HU:"Hungary",IE:"Ireland",IT:"Italy",LT:"Lithuania",LU:"Luxembourg",LV:"Latvia",NL:"Netherlands",NO:"Norway",PL:"Poland",PT:"Portugal",RO:"Romania",SE:"Sweden",SI:"Slovenia",SK:"Slovakia",TR:"Turkey",UA:"Ukraine",RS:"Serbia",BA:"Bosnia and Herzegovina",ME:"Montenegro",MK:"North Macedonia",AL:"Albania",CY:"Cyprus",MT:"Malta",IS:"Iceland",MD:"Moldova"};
+let stopSerial=0,groupWasChanged=false,aiImageData=[],analysisVersion=0;
+function stopCard(kind,stop={}){
+ const node=document.createElement("div");node.className="freight-stop";node.dataset.stop=kind;
+ const uid="stop-"+(++stopSerial);const country=String(stop.country||"").toUpperCase();
+ const options='<option value="">Select country</option>'+Object.entries(COUNTRIES).map(([code,name])=>'<option value="'+code+'">'+name+' ('+code+')</option>').join("")+((country&&!COUNTRIES[country])?'<option value="'+escapeHtml(country)+'">'+escapeHtml(country)+'</option>':"");
+ node.innerHTML='<div class="stop-head"><span data-stop-number></span><div><button type="button" data-duplicate-stop title="Duplicate stop">▣</button><button type="button" data-remove-stop title="Remove stop">×</button></div></div>'+
+ '<div class="stop-grid"><label for="'+uid+'-country">Country<select data-field="country" id="'+uid+'-country" required>'+options+'</select></label><label for="'+uid+'-postcode">Postcode<input data-field="postcode" id="'+uid+'-postcode" required maxlength="20"></label></div>'+
+ '<label for="'+uid+'-location">Location / Company<input data-field="location" id="'+uid+'-location" required maxlength="200"></label><label for="'+uid+'-date">Date<input data-field="date" id="'+uid+'-date" type="date" required></label>'+
+ '<div class="freight-label">Working Hours</div><label class="fixed-label"><input data-field="fixed_time" type="checkbox"> Fixed time</label><div class="time-range"><label>From<input data-field="time_from" type="time"></label><label>To<input data-field="time_to" type="time"></label></div>'+
+ '<label for="'+uid+'-comment">Comment<input data-field="comment" id="'+uid+'-comment" maxlength="1000"></label>';
+ ["country","postcode","location","date","time_from","time_to","comment"].forEach(key=>node.querySelector('[data-field="'+key+'"]').value=stop[key]||"");
+ node.querySelector('[data-field="fixed_time"]').checked=!!stop.fixed_time;
+ return node;
+}
+function readStop(node){const stop={};node.querySelectorAll("[data-field]").forEach(field=>stop[field.dataset.field]=field.type==="checkbox"?field.checked:field.value.trim());return stop}
+function readStops(kind){return [...el(kind+"Stops").querySelectorAll("[data-stop]")].map(readStop)}
+function renumberStops(){["loading","delivery"].forEach(kind=>{const nodes=el(kind+"Stops").querySelectorAll("[data-stop]");nodes.forEach((node,i)=>{node.querySelector("[data-stop-number]").textContent="⁝ Stop "+(i+1);node.querySelector("[data-remove-stop]").disabled=nodes.length===1;node.querySelector('[data-field="time_to"]').disabled=node.querySelector('[data-field="fixed_time"]').checked})})}
+function autoRequestGroup(){if(!groupWasChanged)el("requestGroup").value=[...readStops("loading"),...readStops("delivery")].some(s=>["LT","LV","EE","PL"].includes(s.country))?"Export":"Europe"}
+function setStops(kind,stops){el(kind+"Stops").replaceChildren(...(stops?.length?stops:[{}]).map(stop=>stopCard(kind,stop)));renumberStops()}
+function setTransportType(value){el("cargoType").value=value||"Frigo";el("transportTypes").querySelectorAll("[data-transport-type]").forEach(button=>button.classList.toggle("active",button.dataset.transportType===el("cargoType").value))}
+function showRequestDetails(){el("aiRequestPanel").classList.add("hidden");el("requestForm").classList.remove("hidden")}
+function openFreightRequest(mode="manual",row=null){
+ analysisVersion++;activeEditRequest=row?.id||null;groupWasChanged=!!row?.transport_group;
+ el("requestForm").reset();el("requestSaveMessage").textContent="";setTransportType(row?.cargo_type||"Frigo");
+ const legacy=(kind)=>kind==="loading"?{country:row?.loading_country,postcode:row?.loading_postcode,location:row?.loading_city,date:row?.pickup_date}:{country:row?.delivery_country,postcode:row?.delivery_postcode,location:row?.delivery_city,date:row?.delivery_date};
+ setStops("loading",row?.loading_stops?.length?row.loading_stops:[legacy("loading")]);setStops("delivery",row?.delivery_stops?.length?row.delivery_stops:[legacy("delivery")]);
+ el("temperature").value=row?.temperature||"";el("weight").value=row?.weight_kg??"";el("pallets").value=Number(row?.pallet_count)>0?row.pallet_count:"";el("palletExchange").checked=!!row?.pallet_exchange||Number(row?.pallet_count)===-1;el("client").value=row?.client||"";el("requestNote").value=row?.note||"";
+ autoRequestGroup();if(row?.transport_group)el("requestGroup").value=row.transport_group;
+ el("requestTitle").textContent=row?"Edit Freight Request #"+row.id:"New Freight Request";el("saveRequest").textContent=row?"Save Changes":"▣ Create Request";
+ el("requestForm").classList.toggle("hidden",mode==="ai");el("aiRequestPanel").classList.toggle("hidden",mode!=="ai");el("backToSource").classList.toggle("hidden",mode!=="ai");
+ if(mode==="ai"){el("aiRequestText").value="";aiImageData=[];renderAiImages();showMessage("aiRequestMessage","",false)}
+ el("requestModal").classList.add("show");
+}
+el("newRequest").onclick=()=>openFreightRequest();
+el("manualRequest").onclick=()=>openFreightRequest();
+el("aiRequest").onclick=()=>openFreightRequest("ai");
+el("fillManually").onclick=showRequestDetails;
+el("backToSource").onclick=()=>{el("requestForm").classList.add("hidden");el("aiRequestPanel").classList.remove("hidden")};
+el("transportTypes").onclick=event=>{const button=event.target.closest("[data-transport-type]");if(button)setTransportType(button.dataset.transportType)};
+el("requestGroup").onchange=()=>{groupWasChanged=true};
+el("requestForm").addEventListener("input",event=>{if(event.target.matches('[data-field="country"]'))autoRequestGroup()});
+el("requestForm").addEventListener("change",event=>{if(event.target.matches('[data-field="fixed_time"]'))renumberStops()});
+el("requestForm").addEventListener("click",event=>{
+ const add=event.target.closest("[data-add-stop]"),remove=event.target.closest("[data-remove-stop]"),copy=event.target.closest("[data-duplicate-stop]");
+ if(add){const kind=add.dataset.addStop;if(readStops(kind).length>=10){toast("Maximum 10 stops per side");return}el(kind+"Stops").append(stopCard(kind))}
+ if(remove){const card=remove.closest("[data-stop]");if(readStops(card.dataset.stop).length>1)card.remove()}
+ if(copy){const card=copy.closest("[data-stop]");if(readStops(card.dataset.stop).length>=10){toast("Maximum 10 stops per side");return}card.after(stopCard(card.dataset.stop,readStop(card)))}
+ if(add||remove||copy){renumberStops();autoRequestGroup()}
+});
+function renderAiImages(){el("aiImages").innerHTML=aiImageData.map((url,i)=>'<div><img src="'+url+'" alt="Pasted request image"><button type="button" data-remove-image="'+i+'" aria-label="Remove image">×</button></div>').join("")}
+el("aiImages").onclick=event=>{const button=event.target.closest("[data-remove-image]");if(button){aiImageData.splice(Number(button.dataset.removeImage),1);renderAiImages()}};
+el("aiRequestText").addEventListener("paste",event=>{
+ const files=[...(event.clipboardData?.items||[])].filter(item=>item.type.startsWith("image/")).map(item=>item.getAsFile()).filter(Boolean);
+ if(!files.length)return;event.preventDefault();
+ files.forEach(file=>{if(aiImageData.length>=3||file.size>2*1024*1024){showMessage("aiRequestMessage","Up to 3 images, maximum 2 MB each.",true);return}const reader=new FileReader();reader.onload=()=>{if(aiImageData.length<3){aiImageData.push(String(reader.result));renderAiImages()}};reader.readAsDataURL(file)});
+});
+function fillAiDraft(draft){
+ setTransportType(draft.transport_type);setStops("loading",draft.loading_stops);setStops("delivery",draft.delivery_stops);
+ el("temperature").value=draft.temperature??"";el("weight").value=draft.weight_kg??"";el("pallets").value=draft.pallet_count??"";el("palletExchange").checked=!!draft.pallet_exchange;el("client").value=draft.client||"";el("requestNote").value=draft.note||"";groupWasChanged=false;autoRequestGroup();showRequestDetails();
+ showMessage("requestSaveMessage","Draft filled from your request. Review all fields"+(draft.warnings?.length?": "+draft.warnings.join(" "):" before creating it."),false);
+}
+el("analyseRequest").onclick=async()=>{
+ const text=el("aiRequestText").value.trim();if(!text&&!aiImageData.length){showMessage("aiRequestMessage","Paste request text or an image first.",true);return}
+ const version=analysisVersion;el("analyseRequest").disabled=true;showMessage("aiRequestMessage","Analysing request…",false);
+ try{
+  const {data,error}=await db.functions.invoke("analyse-freight",{body:{text,images:aiImageData}});
+  let message=data?.error;
+  if(error?.context){try{message=(await error.context.json()).error||message}catch{}}
+  if(error||message)throw new Error(message||error.message||"Analysis failed.");
+  if(version!==analysisVersion||!el("requestModal").classList.contains("show"))return;
+  if(!data?.draft)throw new Error("No draft returned. Please try again.");
+  fillAiDraft(data.draft);
+ }catch(error){if(version===analysisVersion)showMessage("aiRequestMessage",error.message,true)}
+ finally{el("analyseRequest").disabled=false}
 };
+el("requestForm").onsubmit=async event=>{
+ event.preventDefault();const loading=readStops("loading"),delivery=readStops("delivery"),all=[...loading,...delivery];
+ if(all.some(s=>!/^[A-Z]{2}$/.test(s.country))){showMessage("requestSaveMessage","Choose a country for every stop.",true);return}
+ if(all.some(s=>s.time_from&&s.time_to&&!s.fixed_time&&s.time_to<s.time_from)){showMessage("requestSaveMessage","Working hours: end time must be after start time.",true);return}
+ const first=loading[0],last=delivery[0],fields={loading_country:first.country,loading_postcode:first.postcode,loading_city:first.location,pickup_date:first.date,delivery_country:last.country,delivery_postcode:last.postcode,delivery_city:last.location,delivery_date:last.date,cargo_type:el("cargoType").value,temperature:el("temperature").value.trim()||null,weight_kg:el("weight").value?Number(el("weight").value):null,pallet_count:el("pallets").value?Number(el("pallets").value):null,pallet_exchange:el("palletExchange").checked,client:el("client").value.trim()||null,note:el("requestNote").value.trim()||null,loading_stops:loading,delivery_stops:delivery,transport_group:el("requestGroup").value};
+ el("saveRequest").disabled=true;showMessage("requestSaveMessage","Saving…",false);
+ try{
+ let result;
+ if(activeEditRequest)result=await db.from("transport_requests").update(fields).eq("id",activeEditRequest).eq("workspace_id",WORKSPACE_ID).eq("created_by",currentUser.id).select("id").maybeSingle();
+ else result=await db.from("transport_requests").insert({...fields,workspace_id:WORKSPACE_ID,created_by:currentUser.id}).select("id").single();
+ if(result.error||!result.data)throw new Error(result.error?.message||"Request could not be saved.");
+ const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestModal").classList.remove("show");el("groupFilter").value=fields.transport_group;await loadRequests();toast(wasEditing?"Request updated":"Request created");
+ }catch(error){showMessage("requestSaveMessage","Could not save request: "+error.message,true)}
+ finally{el("saveRequest").disabled=false}
+};
+
 function cargoCopyText(row){
   const route=(country,postcode,city)=>[country,postcode,city].filter(Boolean).join(" ");
-  return ["Loading: "+route(row.loading_country,row.loading_postcode,row.loading_city)+" → Unloading: "+route(row.delivery_country,row.delivery_postcode,row.delivery_city), row.client?"Customer: "+row.client:"", "Loading date: "+(row.pickup_date||""), "Delivery date: "+(row.delivery_date||""), "Cargo: "+[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).join(" · "), row.price_eur?"Price: "+Number(row.price_eur).toLocaleString("en-US")+" €":"", row.price_comment?"Price comment: "+row.price_comment:"", row.note?"Note: "+row.note:""].filter(Boolean).join("\n");
+  return ["Loading: "+rowStops(row,"loading").map(s=>[s.country,s.postcode,s.location,s.date,s.time_from,s.time_to,s.comment].filter(Boolean).join(" ")).join(" → ")+" → Unloading: "+rowStops(row,"delivery").map(s=>[s.country,s.postcode,s.location,s.date,s.time_from,s.time_to,s.comment].filter(Boolean).join(" ")).join(" → "), row.client?"Customer: "+row.client:"", "Loading date: "+(row.pickup_date||""), "Delivery date: "+(row.delivery_date||""), "Cargo: "+[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).join(" · "), row.price_eur?"Price: "+Number(row.price_eur).toLocaleString("en-US")+" €":"", row.price_comment?"Price comment: "+row.price_comment:"", row.note?"Note: "+row.note:""].filter(Boolean).join("\n");
 }
 async function copyCargo(row){
   const text=cargoCopyText(row);
@@ -384,7 +479,7 @@ await loadRequests();toast("Status updated");
 }catch(error){toast("Could not update status: "+error.message);selector.value="";selector.disabled=false}
 };
 el("rows").onclick=async event=>{
-  const editButton=event.target.closest("[data-edit]");if(editButton){const row=requests.find(item=>String(item.id)===editButton.dataset.edit);if(!row||row.created_by!==currentUser.id)return;activeEditRequest=row.id;el("requestTitle").textContent="Edit transport request #"+row.id;el("saveRequest").textContent="Save changes";el("fromCountry").value=row.loading_country||"";el("fromPostcode").value=row.loading_postcode||"";el("fromCity").value=row.loading_city||"";el("pickupDate").value=row.pickup_date||"";el("toCountry").value=row.delivery_country||"";el("toPostcode").value=row.delivery_postcode||"";el("toCity").value=row.delivery_city||"";el("deliveryDate").value=row.delivery_date||"";el("deliveryDate").required=!!row.delivery_date;const cargo=el("cargoType");if(!Array.from(cargo.options).some(option=>option.value===row.cargo_type)){const legacy=new Option(row.cargo_type,row.cargo_type);legacy.dataset.legacy="true";cargo.add(legacy)}cargo.value=row.cargo_type||"";el("temperature").value=row.temperature||"";el("weight").value=row.weight_kg??"";el("palletExchange").value=(row.pallet_exchange||Number(row.pallet_count)===-1)?"true":"";el("pallets").value=Number(row.pallet_count)>0?row.pallet_count:"";el("client").value=row.client||"";el("requestNote").value=row.note||"";el("requestModal").classList.add("show");return}
+  const editButton=event.target.closest("[data-edit]");if(editButton){const row=requests.find(item=>String(item.id)===editButton.dataset.edit);if(row&&row.created_by===currentUser.id)openFreightRequest("manual",row);return}
   const chat=event.target.closest("[data-chat]");if(chat){await openChat(chat.dataset.chat);return}
   const copy=event.target.closest("[data-copy]");if(copy){const row=requests.find(item=>String(item.id)===copy.dataset.copy);if(row)await copyCargo(row);return}
   const maps=event.target.closest("[data-maps]");if(maps){const row=requests.find(item=>String(item.id)===maps.dataset.maps);if(row)openCargoMap(row);return}
