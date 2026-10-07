@@ -300,7 +300,7 @@ function readStops(kind){return [...el(kind+"Stops").querySelectorAll("[data-sto
 function renumberStops(){["loading","delivery"].forEach(kind=>{const nodes=el(kind+"Stops").querySelectorAll("[data-stop]");nodes.forEach((node,i)=>{node.querySelector("[data-stop-number]").textContent="⁝ Stop "+(i+1);node.querySelector("[data-remove-stop]").disabled=nodes.length===1;node.querySelector('[data-field="time_to"]').disabled=node.querySelector('[data-field="fixed_time"]').checked})})}
 function autoRequestGroup(){if(!groupWasChanged)el("requestGroup").value=[...readStops("loading"),...readStops("delivery")].some(s=>["LT","LV","EE","PL"].includes(s.country))?"Export":"Europe"}
 function setStops(kind,stops){el(kind+"Stops").replaceChildren(...(stops?.length?stops:[{}]).map(stop=>stopCard(kind,stop)));renumberStops()}
-function setTransportType(value){el("cargoType").value=value||"Frigo";el("transportTypes").querySelectorAll("[data-transport-type]").forEach(button=>button.classList.toggle("active",button.dataset.transportType===el("cargoType").value))}
+function setTransportType(value){el("transportTypes").querySelectorAll("[data-legacy-type]").forEach(node=>node.remove());const type=value||"Frigo";if(!["Frigo","Tautliner","Double Decker","Mega","Road Train"].includes(type)){const button=document.createElement("button");button.type="button";button.dataset.transportType=type;button.dataset.legacyType="true";button.textContent=type;el("transportTypes").append(button)}el("cargoType").value=type;el("transportTypes").querySelectorAll("[data-transport-type]").forEach(button=>button.classList.toggle("active",button.dataset.transportType===el("cargoType").value))}
 function showRequestDetails(){el("aiRequestPanel").classList.add("hidden");el("requestForm").classList.remove("hidden")}
 function openFreightRequest(mode="manual",row=null){
  analysisVersion++;activeEditRequest=row?.id||null;groupWasChanged=!!row?.transport_group;
@@ -317,7 +317,7 @@ function openFreightRequest(mode="manual",row=null){
 el("newRequest").onclick=()=>openFreightRequest();
 el("manualRequest").onclick=()=>openFreightRequest();
 el("aiRequest").onclick=()=>openFreightRequest("ai");
-el("fillManually").onclick=showRequestDetails;
+el("fillManually").onclick=()=>{analysisVersion++;showRequestDetails()};
 el("backToSource").onclick=()=>{el("requestForm").classList.add("hidden");el("aiRequestPanel").classList.remove("hidden")};
 el("transportTypes").onclick=event=>{const button=event.target.closest("[data-transport-type]");if(button)setTransportType(button.dataset.transportType)};
 el("requestGroup").onchange=()=>{groupWasChanged=true};
@@ -383,7 +383,8 @@ async function copyCargo(row){
 }
 function openCargoMap(row){
   const address=(country,postcode,city)=>[postcode,city,country].filter(Boolean).join(", ");
-  const url="https://www.google.com/maps/dir/?api=1&origin="+encodeURIComponent(address(row.loading_country,row.loading_postcode,row.loading_city))+"&destination="+encodeURIComponent(address(row.delivery_country,row.delivery_postcode,row.delivery_city));
+  const stops=[...rowStops(row,"loading"),...rowStops(row,"delivery")],addresses=stops.map(s=>address(s.country,s.postcode,s.location));
+  const url="https://www.google.com/maps/dir/?api=1&origin="+encodeURIComponent(addresses[0])+"&destination="+encodeURIComponent(addresses[addresses.length-1])+(addresses.length>2?"&waypoints="+encodeURIComponent(addresses.slice(1,-1).join("|")):"");
   window.open(url,"_blank","noopener");
 }
 
