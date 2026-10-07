@@ -121,7 +121,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 </section>
 <form id="requestForm" class="hidden">
 <div class="freight-card"><h3>Request Details</h3>
-<label class="freight-label">Transport Type *</label>
+<label class="freight-label">Transport Type *</label><div style="font-size:11px;color:#8494a8;margin-bottom:8px">Select one or more transport types.</div>
 <div class="transport-types" id="transportTypes"><button type="button" data-transport-type="Frigo" class="active">Frigo</button><button type="button" data-transport-type="Tautliner" class="">Tautliner</button><button type="button" data-transport-type="Double Decker" class="">Double Decker</button><button type="button" data-transport-type="Mega" class="">Mega</button><button type="button" data-transport-type="Road Train" class="">Road Train</button></div>
 <input type="hidden" id="cargoType" value="Frigo">
 <div class="stops-columns"><section><h3>Loading Stops</h3><div id="loadingStops"></div><button type="button" class="add-stop" data-add-stop="loading">+ Add loading stop</button></section><section><h3>Delivery Stops</h3><div id="deliveryStops"></div><button type="button" class="add-stop" data-add-stop="delivery">+ Add delivery stop</button></section></div>
@@ -301,7 +301,14 @@ function readStops(kind){return [...el(kind+"Stops").querySelectorAll("[data-sto
 function renumberStops(){["loading","delivery"].forEach(kind=>{const nodes=el(kind+"Stops").querySelectorAll("[data-stop]");nodes.forEach((node,i)=>{node.querySelector("[data-stop-number]").textContent="⁝ Stop "+(i+1);node.querySelector("[data-remove-stop]").disabled=nodes.length===1;node.querySelector('[data-field="time_to"]').disabled=node.querySelector('[data-field="fixed_time"]').checked})})}
 function autoRequestGroup(){if(!groupWasChanged)el("requestGroup").value=[...readStops("loading"),...readStops("delivery")].some(s=>["LT","LV","EE","PL"].includes(s.country))?"Export":"Europe"}
 function setStops(kind,stops){el(kind+"Stops").replaceChildren(...(stops?.length?stops:[{}]).map(stop=>stopCard(kind,stop)));renumberStops()}
-function setTransportType(value){el("transportTypes").querySelectorAll("[data-legacy-type]").forEach(node=>node.remove());const type=value||"Frigo";if(!["Frigo","Tautliner","Double Decker","Mega","Road Train"].includes(type)){const button=document.createElement("button");button.type="button";button.dataset.transportType=type;button.dataset.legacyType="true";button.textContent=type;el("transportTypes").append(button)}el("cargoType").value=type;el("transportTypes").querySelectorAll("[data-transport-type]").forEach(button=>button.classList.toggle("active",button.dataset.transportType===el("cargoType").value))}
+function transportTypeValues(value){return [...new Set((Array.isArray(value)?value:String(value||"").split(" / ")).map(type=>String(type).trim()).filter(Boolean))]}
+function setTransportType(value){
+ const types=transportTypeValues(value);
+ el("transportTypes").querySelectorAll("[data-legacy-type]").forEach(node=>node.remove());
+ types.forEach(type=>{if(!["Frigo","Tautliner","Double Decker","Mega","Road Train"].includes(type)){const button=document.createElement("button");button.type="button";button.dataset.transportType=type;button.dataset.legacyType="true";button.textContent=type;el("transportTypes").append(button)}});
+ el("cargoType").value=types.join(" / ");
+ el("transportTypes").querySelectorAll("[data-transport-type]").forEach(button=>{const selected=types.includes(button.dataset.transportType);button.classList.toggle("active",selected);button.setAttribute("aria-pressed",String(selected))});
+}
 function showRequestDetails(){el("aiRequestPanel").classList.add("hidden");el("requestForm").classList.remove("hidden")}
 function openFreightRequest(mode="manual",row=null){
  analysisVersion++;activeEditRequest=row?.id||null;groupWasChanged=!!row?.transport_group;
@@ -320,7 +327,7 @@ el("manualRequest").onclick=()=>openFreightRequest();
 el("aiRequest").onclick=()=>openFreightRequest("ai");
 el("fillManually").onclick=()=>{analysisVersion++;showRequestDetails()};
 el("backToSource").onclick=()=>{el("requestForm").classList.add("hidden");el("aiRequestPanel").classList.remove("hidden")};
-el("transportTypes").onclick=event=>{const button=event.target.closest("[data-transport-type]");if(button)setTransportType(button.dataset.transportType)};
+el("transportTypes").onclick=event=>{const button=event.target.closest("[data-transport-type]");if(button){const values=transportTypeValues(el("cargoType").value),type=button.dataset.transportType;setTransportType(values.includes(type)?values.filter(value=>value!==type):[...values,type])}};
 el("requestGroup").onchange=()=>{groupWasChanged=true};
 el("requestForm").addEventListener("input",event=>{if(event.target.matches('[data-field="country"]'))autoRequestGroup()});
 el("requestForm").addEventListener("change",event=>{if(event.target.matches('[data-field="fixed_time"]'))renumberStops()});
@@ -358,7 +365,7 @@ el("analyseRequest").onclick=async()=>{
  finally{el("analyseRequest").disabled=false}
 };
 el("requestForm").onsubmit=async event=>{
- event.preventDefault();const loading=readStops("loading"),delivery=readStops("delivery"),all=[...loading,...delivery];
+ event.preventDefault();if(!transportTypeValues(el("cargoType").value).length){showMessage("requestSaveMessage","Choose at least one transport type.",true);return}const loading=readStops("loading"),delivery=readStops("delivery"),all=[...loading,...delivery];
  if(all.some(s=>!/^[A-Z]{2}$/.test(s.country))){showMessage("requestSaveMessage","Choose a country for every stop.",true);return}
  if(all.some(s=>s.time_from&&s.time_to&&!s.fixed_time&&s.time_to<s.time_from)){showMessage("requestSaveMessage","Working hours: end time must be after start time.",true);return}
  const first=loading[0],last=delivery[0],fields={loading_country:first.country,loading_postcode:first.postcode,loading_city:first.location,pickup_date:first.date,delivery_country:last.country,delivery_postcode:last.postcode,delivery_city:last.location,delivery_date:last.date,cargo_type:el("cargoType").value,temperature:el("temperature").value.trim()||null,weight_kg:el("weight").value?Number(el("weight").value):null,pallet_count:el("pallets").value?Number(el("pallets").value):null,pallet_exchange:el("palletExchange").checked,client:el("client").value.trim()||null,note:el("requestNote").value.trim()||null,loading_stops:loading,delivery_stops:delivery,transport_group:el("requestGroup").value};
