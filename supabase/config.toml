@@ -1,0 +1,3 @@
+[functions.analyse-freight]
+verify_jwt = false
+# The function validates the user token with auth.getUser and checks Sales membership.
