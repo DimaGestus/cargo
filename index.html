@@ -542,7 +542,7 @@ el("priceForm").onsubmit=async event=>{
   try{
     const {data,error}=await db.from("transport_requests").update({price_eur:value,price_comment:el("priceComment").value.trim()||null,status:"Price sent"}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
-    closePricePopover();await loadRequests();toast("Price saved");
+    closePricePopover();el("statusFilter").value="Price sent";await loadRequests();toast("Price saved — Price sent");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
   finally{save.disabled=false}
 };
