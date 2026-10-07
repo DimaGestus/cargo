@@ -1,0 +1,1 @@
+alter table public.transport_requests alter column pickup_date drop not null, alter column delivery_date drop not null;
