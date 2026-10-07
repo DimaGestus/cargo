@@ -92,7 +92,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
       <div class="tools">
         <label class="filter-field"><span>Search</span><input class="search" id="query" placeholder="00000"></label>
         <select id="statusFilter" class="filter hidden"><option value="">All statuses</option><option>Waiting for price</option><option>Price sent</option><option>Accepted</option><option>Declined</option></select>
-        <label class="filter-field"><span>Group</span><select id="groupFilter" class="filter"><option>Europe</option></select></label>
+        <label class="filter-field"><span>Group</span><select id="groupFilter" class="filter"><option value="Europe">Europe</option><option value="Export">Export (LT/LV/EE/PL)</option></select></label>
         <label class="filter-field"><span>Loading Country</span><input id="loadCountry" class="filter" maxlength="2" placeholder=""></label>
         <label class="filter-field"><span>Loading Postcode</span><input id="loadPostcode" class="filter" placeholder=""></label>
         <label class="filter-field"><span>Delivery Country</span><input id="deliveryCountry" class="filter" maxlength="2" placeholder=""></label>
@@ -156,9 +156,14 @@ function statusClass(status){return status==="Waiting for price"?"waiting":statu
 function initials(email){return String(email||"").split("@")[0].split(/[._-]/).filter(Boolean).slice(0,2).map(part=>part[0].toUpperCase()).join("")||"TM"}
 function dateLabel(date){if(!date)return "";const [year,month,day]=date.slice(0,10).split("-");return day+"."+month}
 function createdLabel(date){return new Date(date).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).replaceAll("/",".").replace(",","")}
+function requestGroup(row){
+  const exportCountries=new Set(["LT","LV","EE","PL"]);
+  return [row.loading_country,row.delivery_country].some(country=>exportCountries.has(String(country||"").trim().toUpperCase()))?"Export":"Europe";
+}
 function renderRequests(){
   const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
-  const filtered=requests.filter(row=>(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&(!load||row.loading_country.startsWith(load))&&(!delivery||row.delivery_country.startsWith(delivery)));
+  const group=el("groupFilter").value;
+  const filtered=requests.filter(row=>requestGroup(row)===group&&(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&(!load||row.loading_country.startsWith(load))&&(!delivery||row.delivery_country.startsWith(delivery)));
   el("rows").innerHTML=filtered.map(row=>{
     const owner=initials(row.creator_email);
     const cargo=[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).map(escapeHtml).join(" • ");
@@ -354,6 +359,7 @@ el("priceForm").onsubmit=async event=>{
 };
 el("refreshRequests").onclick=loadRequests;
 el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
+el("groupFilter").addEventListener("change",renderRequests);
 ["query","statusFilter","loadCountry","deliveryCountry"].forEach(id=>el(id).addEventListener("input",renderRequests));
 db.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session?.user)enterApp(session.user);else{closeChat();el("chatLauncher").classList.add("hidden");currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
 const {data:{session}}=await db.auth.getSession();
