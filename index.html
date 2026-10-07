@@ -47,6 +47,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .ai-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .owner-status{margin-top:6px}.status.waiting{color:#a15c00;background:#fff0b3}.status.sent{color:#174cbd;background:#dbeafe}.status.received{color:#14773b;background:#dcfce7}.status.accepted{color:#08776e;background:#ccfbf1}.status.declined{color:#b42335;background:#ffe0e4}.status.no-price{color:#6b40aa;background:#eee3ff}
 .action.has-price-comment{color:#245ef3;background:#eaf2ff;border-color:#8bb4ff;font-weight:700}.action.has-price-comment:hover{color:#174cbd;border-color:#245ef3}
+.action.has-price-comment,.action.has-price-comment:focus,.action.has-price-comment:active{color:#245ef3!important;background:#eaf2ff!important;border-color:#8bb4ff!important}.price-input-row.hidden{display:none}
 </style>
 </head>
 <body>
@@ -204,7 +205,7 @@ el("statusFilter").className="filter "+(status?statusClass(status):"");
     const priceComment=row.price_comment?'<div class="price-comment-label">'+escapeHtml(row.price_comment)+'</div>':"";
     const next=activeDepartment==="sales"?'<select class="row-status-select" data-request-status="'+row.id+'" aria-label="Status for request #'+row.id+'"><option value="" selected disabled>Status</option>'+REQUEST_STATUSES.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")+'</select>':"";
     const hasPriceComment=!!String(row.price_comment||"").trim();
-    const edit=row.created_by===currentUser.id?'<button type="button" class="action icon-action'+(hasPriceComment?' has-price-comment':'')+'" data-edit="'+row.id+'" title="'+(hasPriceComment?'Price comment left — edit my request':'Edit my request')+'" aria-label="Edit request #'+row.id+(hasPriceComment?' — price comment left':'')+'">✎</button>':(hasPriceComment?'<span class="action icon-action has-price-comment" role="img" title="Price comment left" aria-label="Price comment left">✎</span>':"");
+    const edit=activeDepartment==="transport"?'<button type="button" class="action icon-action'+(hasPriceComment?' has-price-comment':'')+'" data-comment="'+row.id+'" title="Edit price comment" aria-label="Edit price comment for request #'+row.id+'">✎</button>':(row.created_by===currentUser.id?'<button type="button" class="action icon-action'+(hasPriceComment?' has-price-comment':'')+'" data-edit="'+row.id+'" title="Edit my request" aria-label="Edit request #'+row.id+'">✎</button>':(hasPriceComment?'<span class="action icon-action has-price-comment" role="img" aria-label="Price comment left">✎</span>':""));
     return '<tr class="request-'+statusClass(row.status)+'"><td><div class="reqid">#'+row.id+'</div><div class="owner-label">'+escapeHtml(ownerInitials(owner,row.created_by))+'</div><span class="status owner-status '+statusClass(row.status)+'">'+escapeHtml(row.status)+'</span></td><td class="route">'+route+'</td><td class="cargo"><b>'+cargo+'</b>'+(row.client?'<div class="company">▤ '+escapeHtml(row.client)+'</div>':"")+'</td><td class="status-cell">'+(row.price_eur?'<div class="status-price">'+Number(row.price_eur).toLocaleString("en-US")+' €</div>':"")+'</td><td class="date">'+createdLabel(row.created_at)+'</td><td><div class="actions">'+price+next+edit+'<button type="button" class="action icon-action" data-chat="'+row.id+'" title="Chat about this cargo" aria-label="Chat about request #'+row.id+'">💬</button><button type="button" class="action icon-action" data-copy="'+row.id+'" title="Copy cargo details" aria-label="Copy request #'+row.id+' details">▣</button><button type="button" class="action icon-action" data-maps="'+row.id+'" title="Open route in Google Maps" aria-label="Open request #'+row.id+' route in Google Maps">↗</button></div>'+priceComment+'</td></tr>';
   }).join("")||'<tr><td colspan="6" class="empty">No requests found. Use “New request” to add one for your team.</td></tr>';
   document.querySelectorAll("[data-status] .count").forEach(node=>{const value=node.parentElement.dataset.status;node.textContent=value==="All"?requests.length:requests.filter(r=>r.status===value).length});
@@ -496,7 +497,8 @@ await loadRequests();toast("Status updated");
 }catch(error){toast("Could not update status: "+error.message);selector.value="";selector.disabled=false}
 };
 el("rows").onclick=async event=>{
-  const editButton=event.target.closest("[data-edit]");if(editButton){const row=requests.find(item=>String(item.id)===editButton.dataset.edit);if(row&&row.created_by===currentUser.id)openFreightRequest("manual",row);return}
+  const commentButton=event.target.closest("[data-comment]");if(commentButton){openPricePopover(commentButton,true);return}
+  const editButton=event.target.closest("[data-edit]");if(editButton){const row=requests.find(item=>String(item.id)===editButton.dataset.edit);if(activeDepartment==="sales"&&row&&row.created_by===currentUser.id)openFreightRequest("manual",row);return}
   const chat=event.target.closest("[data-chat]");if(chat){await openChat(chat.dataset.chat);return}
   const copy=event.target.closest("[data-copy]");if(copy){const row=requests.find(item=>String(item.id)===copy.dataset.copy);if(row)await copyCargo(row);return}
   const maps=event.target.closest("[data-maps]");if(maps){const row=requests.find(item=>String(item.id)===maps.dataset.maps);if(row)openCargoMap(row);return}
@@ -520,17 +522,19 @@ function positionPricePopover(){
   const top=rect.bottom+8+box.offsetHeight<=window.innerHeight-10?rect.bottom+8:Math.max(10,rect.top-box.offsetHeight-8);
   box.style.left=left+"px";box.style.top=top+"px";
 }
-function openPricePopover(button){
-  closePricePopover();activeRequest=button.dataset.price;
+let priceCommentOnly=false;
+function openPricePopover(button,commentOnly=false){
+  closePricePopover();priceCommentOnly=commentOnly;activeRequest=button.dataset.price||button.dataset.comment;
   const row=requests.find(item=>String(item.id)===activeRequest);if(!row)return;
   priceAnchor=button;button.closest("tr").classList.add("price-row-active");
   el("priceValue").value=row.price_eur??"";el("priceComment").value=row.price_comment||"";
   el("priceError").textContent="";el("priceError").classList.add("hidden");
   el("priceModal").classList.add("show");el("savePrice").disabled=false;
-  positionPricePopover();el("priceValue").focus();
+  el("priceValue").disabled=commentOnly;el("priceValue").closest(".price-input-row").classList.toggle("hidden",commentOnly);el("priceModal").setAttribute("aria-label",commentOnly?"Edit price comment":"Offer a price");
+  positionPricePopover();el(commentOnly?"priceComment":"priceValue").focus();
 }
 document.addEventListener("click",event=>{
-  if(el("priceModal").classList.contains("show")&&!el("priceModal").contains(event.target)&&!event.target.closest("[data-price]"))closePricePopover();
+  if(el("priceModal").classList.contains("show")&&!el("priceModal").contains(event.target)&&!event.target.closest("[data-price], [data-comment]"))closePricePopover();
 });
 document.addEventListener("keydown",event=>{if(event.key==="Escape")closePricePopover()});
 window.addEventListener("resize",positionPricePopover);
@@ -539,12 +543,12 @@ document.querySelector('[data-close="priceModal"]').onclick=closePricePopover;
 
 el("priceForm").onsubmit=async event=>{
   event.preventDefault();const value=Number(el("priceValue").value);
-  if(!Number.isFinite(value)||value<=0){el("priceValue").reportValidity();return}
+  if(!priceCommentOnly&&(!Number.isFinite(value)||value<=0)){el("priceValue").reportValidity();return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
   try{
-    const {data,error}=await db.from("transport_requests").update({price_eur:value,price_comment:el("priceComment").value.trim()||null,status:"Price sent"}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
+    const {data,error}=await db.from("transport_requests").update(priceCommentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:value,price_comment:el("priceComment").value.trim()||null,status:"Price sent"}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
-    closePricePopover();el("statusFilter").value="Price sent";await loadRequests();toast("Price saved — Price sent");
+    const commentSaved=priceCommentOnly;closePricePopover();if(!commentSaved)el("statusFilter").value="Price sent";await loadRequests();toast(commentSaved?"Comment saved":"Price saved — Price sent");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
   finally{save.disabled=false}
 };
