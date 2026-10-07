@@ -29,6 +29,13 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,16px);opacity:0;background:#163848;color:white;padding:12px 18px;border-radius:8px;z-index:20;transition:.2s;pointer-events:none}.toast.on{opacity:1;transform:translate(-50%,0)}
 @media(max-width:760px){.top{padding:0 14px}.email-label{display:none}.content{padding:20px 13px}.stats{grid-template-columns:repeat(2,1fr);gap:8px}.titlebar{align-items:center}.titlebar h1{font-size:21px}.title-actions{flex-wrap:wrap;justify-content:flex-end}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:auto}.tabs{padding:9px}.tools>*{flex:1}.search{min-width:100%}}.panel{background:transparent;border:0;border-radius:0;overflow:visible}.tabs{gap:5px;border:0;padding:12px 0 10px;overflow:auto}.tab{background:#fff;border:1px solid #d9e1ee;color:#26364a;padding:9px 12px;border-radius:8px;font-size:13px}.tab.active{background:#3b67ed;border-color:#3b67ed;color:#fff;font-weight:700}.tools{padding:8px 0 16px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;border:0}.filter-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#425a7b}.filter-field input,.filter-field select{height:38px;min-width:96px;width:112px;border:1px solid #cbd6e5;border-radius:8px;padding:8px 12px;background:#fff}.filter-field:has(#groupFilter) select{width:171px}.filter-field .search{width:96px;min-width:96px;flex:none}.tablewrap{overflow:auto;border:1px solid #dce3ef;border-radius:11px;background:#fff}th{background:#f8fafc;color:#63748f;padding:14px 15px}td{border-top:1px solid #edf1f7}.gestus-logo{display:block;width:150px;height:33px;object-fit:contain;object-position:left center}.topbrand .gestus-logo{width:140px;height:31px}.brand .gestus-logo{width:155px;height:34px}
 
+
+.chat-launcher{position:fixed;right:18px;bottom:90px;z-index:13;display:flex;align-items:center;gap:10px;background:#2563eb;color:#fff;border:0;border-radius:30px;padding:16px 22px;font-weight:700;box-shadow:0 5px 16px #142d5430}.chat-launcher:hover{background:#1d4ed8}.chat-launcher svg{width:22px;height:22px}
+#chatModal{inset:auto 18px 158px auto;width:min(850px,calc(100vw - 36px));height:min(560px,calc(100dvh - 180px));padding:0;background:transparent;z-index:14;place-items:stretch}
+#chatModal .modalbox{width:100%;height:100%;max-height:none;padding:0;overflow:hidden;display:flex;flex-direction:column;border:1px solid #dce3ef;border-radius:15px;box-shadow:0 18px 55px #122b3b30}
+.chat-panel-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.chat-panel-head h2{margin:0;font-size:17px}.chat-layout{display:grid;grid-template-columns:285px minmax(0,1fr);flex:1;min-height:0}.chat-inbox{overflow:auto;border-right:1px solid var(--line);background:#fff}.chat-conversation{display:block;width:100%;padding:14px 16px;text-align:left;border:0;border-bottom:1px solid #edf1f7;background:#fff}.chat-conversation:hover{background:#f4f7ff}.chat-conversation.active{background:#eaf1ff}.chat-conversation strong{font-size:13px}.chat-conversation small{float:right;color:#8593a4;font-size:11px}.chat-conversation .chat-route{margin-top:6px;font-size:12px;color:#718096}.chat-preview{margin:6px 0 0;color:#8b97a6;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-detail{display:flex;flex-direction:column;min-width:0;min-height:0;padding:16px}.chat-detail h3{margin:0 0 5px;font-size:14px}.chat-detail #chatSubtitle{font-size:12px;line-height:1.5;margin:0 0 10px}.chat-detail #chatThread{margin-bottom:10px;max-width:100%}.chat-detail .chat-messages{height:auto;min-height:0;flex:1}.chat-detail .chat-message.own{background:#edf4ff;border-color:#d7e5fc}.chat-detail .primary{background:#2563eb}.chat-placeholder{display:grid;place-items:center;flex:1;color:#8b97a6;font-size:13px}.chat-detail .chat-form textarea{min-width:0}.chat-inbox-status{padding:20px 16px;color:#8b97a6;font-size:13px}
+@media(max-width:600px){.chat-launcher{right:14px;bottom:22px}#chatModal{right:10px;bottom:90px;width:calc(100vw - 20px);height:min(620px,calc(100dvh - 110px))}.chat-layout{grid-template-columns:1fr}.chat-inbox{border-right:0}.chat-layout.has-conversation .chat-inbox{display:none}.chat-layout:not(.has-conversation) .chat-detail{display:none}.chat-back{display:inline-block!important}.chat-detail{padding:12px}}
+
 </style>
 </head>
 <body>
@@ -127,7 +134,8 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
   <div class="modalhead"><h2>Offer a price</h2><button class="close" data-close="priceModal">×</button></div><p id="priceFor"></p>
   <form id="priceForm"><div class="field"><label for="priceValue">Transport price (€)</label><input id="priceValue" type="number" min="0.01" step="0.01" required placeholder="1850"></div><div class="modalfoot"><button class="secondary" type="button" data-close="priceModal">Cancel</button><button class="primary" type="submit">Save price</button></div></form>
 </div></div>
-<div class="modal" id="chatModal"><div class="modalbox wide"><div class="modalhead"><h2 id="chatTitle">Cargo chat</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><p id="chatSubtitle">Private chat about this request.</p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div class="chat-messages" id="chatMessages" aria-live="polite"></div><div class="chat-status" id="chatStatus" aria-live="polite"></div><form class="chat-form" id="chatForm"><textarea id="chatInput" maxlength="2000" required placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div>
+<button type="button" class="chat-launcher hidden" id="chatLauncher" aria-controls="chatModal" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v14H8l-4 4V4Z"/></svg>Chat</button>
+<div class="modal" id="chatModal" role="dialog" aria-label="Cargo messages"><div class="modalbox wide"><div class="chat-panel-head"><h2>Messages</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><div class="chat-layout" id="chatLayout"><div class="chat-inbox" id="chatInbox"></div><div class="chat-detail"><button type="button" class="linkbtn chat-back" id="chatBack" style="display:none;text-align:left;margin-bottom:10px">← Conversations</button><div class="chat-placeholder" id="chatPlaceholder">Select a conversation</div><h3 id="chatTitle" class="hidden">Cargo chat</h3><p id="chatSubtitle" class="hidden"></p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div class="chat-messages hidden" id="chatMessages" aria-live="polite"></div><div class="chat-status hidden" id="chatStatus" aria-live="polite"></div><form class="chat-form hidden" id="chatForm"><textarea id="chatInput" maxlength="2000" required aria-label="Message" placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div></div></div>
 <div class="toast" id="toast">Done</div>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.2";
@@ -136,6 +144,7 @@ const SUPABASE_KEY="sb_publishable_i1zo2QM56j7BsXVaS2hvzg_5Nq-N-ne";
 const WORKSPACE_ID="4dc0b1f4-0870-49cc-acbd-52003431ba2a";
 const APP_URL="https://dimagestus.github.io/cargo/";
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
+let inboxMessages=[];
 let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
 function palletLabel(row){const count=Number(row.pallet_count)>0?row.pallet_count+" pallets":"";const exchange=(row.pallet_exchange||Number(row.pallet_count)===-1)?"Pallets to change":"No change";return [count,exchange].filter(Boolean).join(", ");}
@@ -184,6 +193,7 @@ async function enterApp(user){
     return;
   }
   currentRole=membership.role;
+  el("chatLauncher").classList.remove("hidden");
   el("userEmail").textContent=user.email||"";
   el("teamButton").classList.toggle("hidden",!["owner","admin"].includes(currentRole));
   el("authScreen").classList.add("hidden");el("appShell").classList.add("ready");
@@ -245,6 +255,31 @@ function openCargoMap(row){
   const url="https://www.google.com/maps/dir/?api=1&origin="+encodeURIComponent(address(row.loading_country,row.loading_postcode,row.loading_city))+"&destination="+encodeURIComponent(address(row.delivery_country,row.delivery_postcode,row.delivery_city));
   window.open(url,"_blank","noopener");
 }
+
+function showChatDetail(show){
+  el("chatLayout").classList.toggle("has-conversation",show);
+  el("chatPlaceholder").classList.toggle("hidden",show);
+  ["chatTitle","chatSubtitle","chatMessages","chatStatus","chatForm"].forEach(id=>el(id).classList.toggle("hidden",!show));
+  if(!show)el("chatThread").classList.add("hidden");
+}
+async function loadChatInbox(){
+  el("chatInbox").innerHTML='<div class="chat-inbox-status">Loading conversations…</div>';
+  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("workspace_id",WORKSPACE_ID).or("sender_id.eq."+currentUser.id+",recipient_id.eq."+currentUser.id).order("created_at",{ascending:false});
+  if(error){el("chatInbox").innerHTML='<div class="chat-inbox-status">'+escapeHtml("Could not load conversations: "+error.message)+'</div>';return}
+  inboxMessages=data||[];
+  const latest=new Map();inboxMessages.forEach(message=>{if(!latest.has(String(message.request_id)))latest.set(String(message.request_id),message)});
+  const rows=[...latest].map(([id,message])=>({row:requests.find(r=>String(r.id)===id),message})).filter(item=>item.row);
+  if(currentChatRequest&&!latest.has(String(currentChatRequest.id)))rows.unshift({row:currentChatRequest,message:null});
+  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong><small>'+escapeHtml(message?new Date(message.created_at).toLocaleDateString():"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a private conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
+}
+el("chatLauncher").onclick=async()=>{
+  if(el("chatModal").classList.contains("show")){await closeChat();return}
+  showChatDetail(false);el("chatModal").classList.add("show");el("chatLauncher").setAttribute("aria-expanded","true");await loadChatInbox();
+};
+el("chatInbox").onclick=async event=>{const button=event.target.closest("[data-inbox-request]");if(button)await openChat(button.dataset.inboxRequest)};
+el("chatBack").onclick=()=>{showChatDetail(false)};
+document.addEventListener("keydown",event=>{if(event.key==="Escape"&&el("chatModal").classList.contains("show"))closeChat()});
+
 function renderChatMessages(items){
   const box=el("chatMessages");
   box.innerHTML=items.map(item=>'<div class="chat-message '+(item.sender_id===currentUser.id?"own":"")+'"><div class="chat-meta">'+escapeHtml(item.sender_id===currentUser.id?"You":item.sender_id===currentChatRequest.created_by?"Cargo owner":"Colleague · "+String(item.sender_id).slice(0,8))+" · "+escapeHtml(new Date(item.created_at).toLocaleString())+'</div><div class="chat-body">'+escapeHtml(item.message)+'</div></div>').join("")||'<div class="empty">No messages in this private conversation yet.</div>';
@@ -281,16 +316,17 @@ async function loadChatMessages(){
 async function openChat(requestId){
   const row=requests.find(item=>String(item.id)===String(requestId));if(!row)return;
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
+  showChatDetail(true);el("chatLauncher").setAttribute("aria-expanded","true");
   currentChatRequest=row;currentChatPeer=row.created_by===currentUser.id?null:row.created_by;
   el("chatTitle").textContent="Private cargo chat · request #"+row.id;
   el("chatSubtitle").textContent=(row.created_by===currentUser.id?"Choose a colleague conversation. Only you and that colleague can read it.":"Private messages to the cargo owner. Only you and the owner can read this conversation.")+" · "+row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
   el("chatStatus").textContent="";el("chatInput").value="";el("chatMessages").innerHTML='<div class="empty">Loading messages…</div>';el("chatModal").classList.add("show");
-  await loadChatThreads();await loadChatMessages();
-  currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},async()=>{await loadChatThreads();await loadChatMessages()}).subscribe();
+  await loadChatInbox();await loadChatThreads();await loadChatMessages();
+  currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},async()=>{await loadChatInbox();await loadChatThreads();await loadChatMessages()}).subscribe();
 }
 el("chatThread").onchange=async event=>{currentChatPeer=event.target.value||null;el("chatStatus").textContent="";await loadChatMessages();el("chatInput").disabled=!currentChatPeer;el("sendChatMessage").disabled=!currentChatPeer};
 async function closeChat(){
-  el("chatModal").classList.remove("show");currentChatRequest=null;currentChatPeer=null;
+  el("chatModal").classList.remove("show");el("chatLauncher").setAttribute("aria-expanded","false");showChatDetail(false);currentChatRequest=null;currentChatPeer=null;
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
 }
 el("chatForm").onsubmit=async event=>{
@@ -300,7 +336,7 @@ el("chatForm").onsubmit=async event=>{
   const {error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,recipient_id:currentChatPeer,message});
   send.disabled=false;
   if(error){el("chatStatus").textContent="Could not send message: "+error.message;return}
-  el("chatInput").value="";el("chatStatus").textContent="";await loadChatMessages();el("chatInput").focus();
+  el("chatInput").value="";el("chatStatus").textContent="";await loadChatMessages();await loadChatInbox();el("chatInput").focus();
 };
 el("rows").onclick=async event=>{
   const editButton=event.target.closest("[data-edit]");if(editButton){const row=requests.find(item=>String(item.id)===editButton.dataset.edit);if(!row||row.created_by!==currentUser.id)return;activeEditRequest=row.id;el("requestTitle").textContent="Edit transport request #"+row.id;el("saveRequest").textContent="Save changes";el("fromCountry").value=row.loading_country||"";el("fromPostcode").value=row.loading_postcode||"";el("fromCity").value=row.loading_city||"";el("pickupDate").value=row.pickup_date||"";el("toCountry").value=row.delivery_country||"";el("toPostcode").value=row.delivery_postcode||"";el("toCity").value=row.delivery_city||"";el("deliveryDate").value=row.delivery_date||"";el("deliveryDate").required=!!row.delivery_date;const cargo=el("cargoType");if(!Array.from(cargo.options).some(option=>option.value===row.cargo_type)){const legacy=new Option(row.cargo_type,row.cargo_type);legacy.dataset.legacy="true";cargo.add(legacy)}cargo.value=row.cargo_type||"";el("temperature").value=row.temperature||"";el("weight").value=row.weight_kg??"";el("palletExchange").value=(row.pallet_exchange||Number(row.pallet_count)===-1)?"true":"";el("pallets").value=Number(row.pallet_count)>0?row.pallet_count:"";el("client").value=row.client||"";el("requestNote").value=row.note||"";el("requestModal").classList.add("show");return}
@@ -319,7 +355,7 @@ el("priceForm").onsubmit=async event=>{
 el("refreshRequests").onclick=loadRequests;
 el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
 ["query","statusFilter","loadCountry","deliveryCountry"].forEach(id=>el(id).addEventListener("input",renderRequests));
-db.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session?.user)enterApp(session.user);else{currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
+db.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session?.user)enterApp(session.user);else{closeChat();el("chatLauncher").classList.add("hidden");currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
 const {data:{session}}=await db.auth.getSession();
 if(session?.user)await enterApp(session.user);
 </script>
