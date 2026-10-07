@@ -201,7 +201,7 @@ el("statusFilter").className="filter "+(status?statusClass(status):"");
     const owner=requestOwners.find(item=>item.user_id===row.created_by)?.display_name||(row.created_by===currentUser.id?(currentUser.email||"You").split("@")[0]:"Team member");
     const cargo=[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).map(escapeHtml).join(" • ");
     const route=renderRouteStops(row);
-    const price=row.price_eur?'<button class="action price" data-price="'+row.id+'">'+Number(row.price_eur).toLocaleString("en-US")+" €</button>":'<button class="action price" data-price="'+row.id+'">＋ Price</button>';
+    const price=activeDepartment==="sales"?"":row.price_eur?'<button class="action price" data-price="'+row.id+'">'+Number(row.price_eur).toLocaleString("en-US")+" €</button>":'<button class="action price" data-price="'+row.id+'">＋ Price</button>';
     const priceComment=row.price_comment?'<div class="price-comment-label">'+escapeHtml(row.price_comment)+'</div>':"";
     const next=activeDepartment==="sales"?'<select class="row-status-select" data-request-status="'+row.id+'" aria-label="Status for request #'+row.id+'"><option value="" selected disabled>Status</option>'+REQUEST_STATUSES.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")+'</select>':"";
     const hasPriceComment=!!String(row.price_comment||"").trim();
@@ -524,6 +524,7 @@ function positionPricePopover(){
 }
 let priceCommentOnly=false;
 function openPricePopover(button,commentOnly=false){
+  if(activeDepartment!=="transport")return;
   closePricePopover();priceCommentOnly=commentOnly;activeRequest=button.dataset.price||button.dataset.comment;
   const row=requests.find(item=>String(item.id)===activeRequest);if(!row)return;
   priceAnchor=button;button.closest("tr").classList.add("price-row-active");
@@ -542,6 +543,7 @@ document.addEventListener("scroll",()=>{if(priceAnchor)positionPricePopover()},t
 document.querySelector('[data-close="priceModal"]').onclick=closePricePopover;
 
 el("priceForm").onsubmit=async event=>{
+  if(activeDepartment!=="transport"){event.preventDefault();return}
   event.preventDefault();const value=Number(el("priceValue").value);
   if(!priceCommentOnly&&(!Number.isFinite(value)||value<=0)){el("priceValue").reportValidity();return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
