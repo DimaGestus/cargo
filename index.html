@@ -491,7 +491,7 @@ async function openChat(requestId){
   showChatDetail(true);el("chatLauncher").setAttribute("aria-expanded","true");
   currentChatRequest=row;currentChatPeer=row.created_by===currentUser.id?null:row.created_by;
   el("chatTitle").textContent="Private cargo chat · request #"+row.id;
-  el("chatSubtitle").textContent=(row.created_by===currentUser.id?"Сообщения самому себе для проверки чата.":"Private messages to the cargo owner. Only you and the owner can read this conversation.")+" · "+row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
+  el("chatSubtitle").textContent=row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
   el("chatStatus").textContent="";el("chatInput").value="";el("chatMessages").innerHTML='<div class="empty">Loading messages…</div>';el("chatModal").classList.add("show");
   await loadChatInbox();await loadChatThreads();await loadChatMessages();
   currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},async()=>{await loadChatInbox();await loadChatThreads();await loadChatMessages()}).subscribe();
