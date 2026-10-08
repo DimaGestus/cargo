@@ -63,6 +63,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 .edited-label{margin-top:5px;color:#e58a23;font-size:11px;font-weight:500}
 .chat-request-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.chat-request-heading #chatOpenRequest{color:#245ef3;white-space:nowrap;padding:0 0 8px}tbody tr.chat-opened-request{outline:2px solid #3b67ed;outline-offset:-2px}
 .chat-owner-initials{display:inline-block;margin-left:5px;color:#2457bd;font-size:13px;font-weight:700}
+.chat-conversation small{font-size:10px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -431,10 +432,10 @@ async function loadChatInbox(){
   const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("workspace_id",WORKSPACE_ID).or("sender_id.eq."+currentUser.id+",recipient_id.eq."+currentUser.id).order("created_at",{ascending:false});
   if(error){el("chatInbox").innerHTML='<div class="chat-inbox-status">'+escapeHtml("Could not load conversations: "+error.message)+'</div>';return}
   inboxMessages=data||[];
-  const latest=new Map();inboxMessages.forEach(message=>{if(!latest.has(String(message.request_id)))latest.set(String(message.request_id),message)});
+  const latest=new Map(),started=new Map();inboxMessages.forEach(message=>{const id=String(message.request_id);if(!latest.has(id))latest.set(id,message);started.set(id,message.created_at)});
   const rows=[...latest].map(([id,message])=>({row:requests.find(r=>String(r.id)===id),message})).filter(item=>item.row);
   if(currentChatRequest&&!latest.has(String(currentChatRequest.id)))rows.unshift({row:currentChatRequest,message:null});
-  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong> <span class="chat-owner-initials">'+escapeHtml(ownerInitials(requestOwners.find(owner=>owner.user_id===row.created_by)?.display_name||row.creator_email,row.created_by))+'</span><small>'+escapeHtml(message?new Date(message.created_at).toLocaleDateString():"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a private conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
+  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong> <span class="chat-owner-initials">'+escapeHtml(ownerInitials(requestOwners.find(owner=>owner.user_id===row.created_by)?.display_name||row.creator_email,row.created_by))+'</span><small title="Conversation started">'+escapeHtml(message?new Date(started.get(String(row.id))).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}):"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a private conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
 }
 el("chatLauncher").onclick=async()=>{
   if(el("chatModal").classList.contains("show")){await closeChat();return}
