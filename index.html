@@ -242,6 +242,32 @@ const selected=el("ownerFilter").value;
 el("ownerFilter").innerHTML='<option value="mine">My requests</option><option value="all">All requests</option>'+requestOwners.map(owner=>'<option value="'+escapeHtml(owner.user_id)+'">'+escapeHtml(owner.display_name)+'</option>').join("");
 el("ownerFilter").value=[...el("ownerFilter").options].some(option=>option.value===selected)?selected:"mine";
 }
+
+let requestsChannel=null,requestsRefreshTimer=null,requestsPollTimer=null,requestsRefreshing=false;
+function stopRequestUpdates(){
+ if(requestsChannel){db.removeChannel(requestsChannel);requestsChannel=null}
+ clearTimeout(requestsRefreshTimer);clearInterval(requestsPollTimer);
+ requestsRefreshTimer=null;requestsPollTimer=null;
+}
+async function refreshLiveRequests(){
+ if(!currentUser||document.hidden||requestsRefreshing)return;
+ requestsRefreshing=true;
+ try{await loadRequestOwners();await loadRequests()}finally{requestsRefreshing=false}
+}
+function scheduleRequestRefresh(){
+ clearTimeout(requestsRefreshTimer);
+ requestsRefreshTimer=setTimeout(refreshLiveRequests,150);
+}
+function startRequestUpdates(){
+ stopRequestUpdates();
+ requestsChannel=db.channel("workspace-requests-"+WORKSPACE_ID+"-"+currentUser.id)
+ .on("postgres_changes",{event:"*",schema:"public",table:"transport_requests",filter:"workspace_id=eq."+WORKSPACE_ID},scheduleRequestRefresh)
+ .subscribe(status=>{if(status==="SUBSCRIBED")scheduleRequestRefresh()});
+ requestsPollTimer=setInterval(refreshLiveRequests,5000);
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRequestRefresh()});
+window.addEventListener("online",scheduleRequestRefresh);
+
 async function loadRequests(){
   if(!currentUser)return;
   const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).is("deleted_at",null).order("created_at",{ascending:false});
@@ -286,6 +312,7 @@ async function enterApp(user){
   el("authScreen").classList.add("hidden");el("appShell").classList.add("ready");
   await loadRequestOwners();
   await loadRequests();
+  startRequestUpdates();
 }
 document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>{if(button.dataset.close==="chatModal")closeChat();else el(button.dataset.close).classList.remove("show")}));
 document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",event=>{if(event.target===modal){if(modal.id==="chatModal")closeChat();else modal.classList.remove("show")}}));
@@ -657,7 +684,7 @@ el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if
 el("groupFilter").addEventListener("change",renderRequests);
 el("ownerFilter").addEventListener("change",renderRequests);
 ["query","statusFilter","loadCountry","deliveryCountry"].forEach(id=>el(id).addEventListener("input",renderRequests));
-db.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session?.user)enterApp(session.user);else{closeChat();el("chatLauncher").classList.add("hidden");currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
+db.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session?.user)enterApp(session.user);else{stopRequestUpdates();closeChat();el("chatLauncher").classList.add("hidden");currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
 const {data:{session}}=await db.auth.getSession();
 if(session?.user)await enterApp(session.user);
 </script>
