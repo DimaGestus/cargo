@@ -455,13 +455,13 @@ async function loadChatThreads(){
   }else{
     const {data,error}=await db.from("transport_messages").select("sender_id,recipient_id").eq("request_id",row.id).order("created_at",{ascending:false});
     if(error){el("chatStatus").textContent="Could not load conversations: "+error.message;return}
-    const peers=[...new Set((data||[]).map(item=>item.sender_id===row.created_by?item.recipient_id:item.sender_id).filter(id=>id&&id!==row.created_by))];
+    const peers=[...new Set([...(data||[]).map(item=>item.sender_id===row.created_by?item.recipient_id:item.sender_id),...requestOwners.map(owner=>owner.user_id)].filter(id=>id&&id!==row.created_by))];
     const previous=currentChatPeer;
     currentChatPeer=peers.includes(previous)?previous:(peers[0]||null);
-    selector.innerHTML=peers.map(id=>'<option value="'+escapeHtml(id)+'">Colleague · '+escapeHtml(String(id).slice(0,8))+'</option>').join("");
+    selector.innerHTML=peers.map(id=>'<option value="'+escapeHtml(id)+'">'+escapeHtml(requestOwners.find(owner=>owner.user_id===id)?.display_name||("Colleague · "+String(id).slice(0,8)))+'</option>').join("");
     selector.classList.toggle("hidden",peers.length===0);selector.disabled=peers.length===0;
     if(currentChatPeer)selector.value=currentChatPeer;
-    if(peers.length===0)el("chatStatus").textContent="No one has started a private conversation about this load yet.";
+    el("chatStatus").textContent=peers.length===0?"You created this request. Invite a colleague to start a private conversation.":"You created this request. Choose a colleague above to message them.";
   }
   el("chatInput").disabled=!currentChatPeer;
   el("sendChatMessage").disabled=!currentChatPeer;
