@@ -69,6 +69,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 .price-author{margin-top:3px;font-size:10px;font-weight:500;color:#63748f}
 .row-status-select{width:68px;min-width:0;max-width:68px;height:32px;padding:4px 6px;font-size:11px}.delete-request{color:#ef233c;border-color:#ffb4bf;background:#fff1f3}.delete-request:hover{color:#d90429;border-color:#ef233c;background:#ffe0e5}#deleteRequestModal{z-index:30}
 .customer-document{display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1;filter:saturate(1.6) contrast(1.15);vertical-align:middle;padding:0;background:transparent}
+.route-stop-line{display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:4px;align-items:baseline}.route-stop-line>.route-date{width:34px}.route-stop-line>small{grid-column:2}.route-stop-place{min-width:0}
 </style>
 </head>
 <body>
@@ -213,7 +214,7 @@ const stops=row[kind+"_stops"];
 return stops?.length?stops:[kind==="loading"?{country:row.loading_country,postcode:row.loading_postcode,location:row.loading_city,date:row.pickup_date}:{country:row.delivery_country,postcode:row.delivery_postcode,location:row.delivery_city,date:row.delivery_date}];
 }
 function renderRouteStops(row){
-const render=stop=>'<div><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong> <strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(stop.location)+'<small>'+escapeHtml([stop.time_from?(stop.fixed_time?"Fixed: ":"")+stop.time_from+(stop.time_to&&!stop.fixed_time?"–"+stop.time_to:""):"",stop.comment?"💬 "+stop.comment:""].filter(Boolean).join(" · "))+'</small></div>';
+const render=stop=>'<div class="route-stop-line"><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong><span class="route-stop-place"><strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(stop.location)+'</span><small>'+escapeHtml([stop.time_from?(stop.fixed_time?"Fixed: ":"")+stop.time_from+(stop.time_to&&!stop.fixed_time?"–"+stop.time_to:""):"",stop.comment?"💬 "+stop.comment:""].filter(Boolean).join(" · "))+'</small></div>';
 return '<div class="route-stops"><div>'+rowStops(row,"loading").map(render).join("")+'</div><span class="arrow">→</span><div>'+rowStops(row,"delivery").map(render).join("")+'</div></div>'+(row.note?'<small>'+escapeHtml(row.note)+'</small>':"");
 }
 function ownerInitials(name,userId){
