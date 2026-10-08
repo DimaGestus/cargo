@@ -1,0 +1,1 @@
+update auth.users set raw_user_meta_data=coalesce(raw_user_meta_data,'{}'::jsonb)||jsonb_build_object('full_name',case id when 'b6c62e88-d3a7-42b8-a40b-670d667c8163'::uuid then 'Dima Jurkoit' else 'Radek Sokolnik' end) where id in ('b6c62e88-d3a7-42b8-a40b-670d667c8163','b414285f-70c8-4e47-8414-04bb8b067523');
