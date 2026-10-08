@@ -589,23 +589,22 @@ function renderChatMessages(items){
 }
 async function loadChatThreads(){
   const row=currentChatRequest;if(!row)return;
-  const selector=el("chatThread"),formEnabled=row.created_by!==currentUser.id||!!currentChatPeer;
+  const selector=el("chatThread");
   if(row.created_by!==currentUser.id){
     currentChatPeer=row.created_by;selector.classList.add("hidden");selector.innerHTML="";
   }else{
     const {data,error}=await db.from("transport_messages").select("sender_id,recipient_id").eq("request_id",row.id).order("created_at",{ascending:false});
-    if(error){el("chatStatus").textContent="Could not load conversations: "+error.message;return}
-    const peers=[...new Set([...(data||[]).map(item=>item.sender_id===row.created_by?item.recipient_id:item.sender_id),currentUser.id,...requestOwners.map(owner=>owner.user_id)].filter(id=>id))];
-    const previous=currentChatPeer;
-    currentChatPeer=currentUser.id;
-    selector.innerHTML=peers.map(id=>'<option value="'+escapeHtml(id)+'">'+escapeHtml(id===currentUser.id?"Я сам (тест чата)":requestOwners.find(owner=>owner.user_id===id)?.display_name||("Colleague · "+String(id).slice(0,8)))+'</option>').join("");
-    selector.classList.add("hidden");selector.disabled=true;
-    if(currentChatPeer)selector.value=currentChatPeer;
-    el("chatStatus").textContent="";
+    if(error){currentChatPeer=null;el("chatInput").disabled=true;el("sendChatMessage").disabled=true;el("chatStatus").textContent="Could not load conversations: "+error.message;return}
+    const existing=(data||[]).map(item=>item.sender_id===currentUser.id?item.recipient_id:item.sender_id);
+    const peers=[...new Set([...existing,row.price_entered_by,...requestOwners.map(owner=>owner.user_id)].filter(id=>id&&id!==currentUser.id))];
+    currentChatPeer=peers.includes(currentChatPeer)?currentChatPeer:existing.find(id=>peers.includes(id))||(peers.includes(row.price_entered_by)?row.price_entered_by:null);
+    selector.innerHTML='<option value="">Choose a colleague…</option>'+peers.map(id=>'<option value="'+escapeHtml(id)+'">'+escapeHtml(requestOwners.find(owner=>owner.user_id===id)?.display_name||("Colleague · "+String(id).slice(0,8)))+'</option>').join("");
+    selector.classList.remove("hidden");selector.disabled=false;selector.value=currentChatPeer||"";
+    el("chatStatus").textContent=currentChatPeer?"":"Choose a colleague to start a private conversation.";
   }
   el("chatInput").disabled=!currentChatPeer;
   el("sendChatMessage").disabled=!currentChatPeer;
-  return formEnabled;
+  return !!currentChatPeer;
 }
 async function loadChatMessages(){
   if(!currentChatRequest)return;
@@ -632,7 +631,7 @@ async function closeChat(){
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
 }
 el("chatForm").onsubmit=async event=>{
-  event.preventDefault();if(!currentChatRequest)return;
+  event.preventDefault();if(!currentChatRequest||!currentChatPeer||currentChatPeer===currentUser.id)return;
   const message=el("chatInput").value.trim();if(!message)return;
   const send=el("sendChatMessage");send.disabled=true;el("chatStatus").textContent="Sending…";
   const {error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,recipient_id:currentChatPeer,message});
