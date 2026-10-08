@@ -67,6 +67,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 .team-list{margin-top:20px;max-height:55vh;overflow:auto}.team-member{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #e3eaf4}.team-email{font-size:12px;color:#526378;margin:4px 0}.team-member small{color:#718096}.team-member-actions{display:flex;align-items:center;gap:8px}.team-member-actions select{border:1px solid #cbd6e5;border-radius:7px;padding:8px;background:#fff}.danger{color:#b42335!important}#teamModal .modalbox{position:relative;padding:24px;max-width:760px}#teamConfirmModal{z-index:30}@media(max-width:600px){.team-member{align-items:flex-start;flex-direction:column}}
 #adminBadge{color:#2457bd;font-weight:650;cursor:pointer}#teamModal{top:75px;bottom:0;left:0;right:0;background:#f7f9fc;padding:24px;align-items:flex-start;z-index:9;overflow:auto}#teamModal .modalbox{width:100%;max-width:none;box-shadow:none;background:transparent;padding:0;border:0}#teamModal .team-list{max-height:none;overflow:visible}#teamModal .team-filters{display:flex;gap:12px;margin:20px 0 14px}#teamSearch{flex:1;min-width:120px}#teamModal .team-filters input,#teamModal select{border:1px solid #cbd6e5;border-radius:7px;padding:9px;background:#fff}#teamModal table{min-width:780px}.team-status{font-size:11px;padding:4px 9px;border-radius:20px;font-weight:650}.team-active-status{color:#178b49;background:#dcfce7}.team-inactive-status{color:#b42335;background:#ffe0e4}.team-inactive td{color:#8794a3}#teamModal .close{right:0;top:0}@media(max-width:600px){#teamModal{padding:15px;top:110px}.team-filters{flex-wrap:wrap}}
 .price-author{margin-top:3px;font-size:10px;font-weight:500;color:#63748f}
+.row-status-select{width:86px;max-width:86px;padding:5px 7px;font-size:11px}.delete-request{color:#d34e5d;border-color:#f0d6dc}#deleteRequestModal{z-index:30}
 </style>
 </head>
 <body>
@@ -126,7 +127,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 <label class="filter-field hidden" id="statusFilterField"><span>Status</span><select id="statusFilter" class="filter"><option value="">All</option><option>Waiting for price</option><option>Price received</option><option>Price sent</option><option>Accepted</option><option>Declined</option><option>No price</option></select></label>
       </div>
       <div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Price</th><th>Created</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
-      <div class="pages"><span id="pageText">0 requests</span><button class="secondary" id="refreshRequests">Refresh list</button></div>
+      <div class="pages"><span id="pageText">0 requests</span><button class="secondary hidden" id="undoRequestDelete">Undo deletion</button><button class="secondary" id="refreshRequests">Refresh list</button></div>
     </section>
   </main>
 </div>
@@ -159,7 +160,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 <div id="requestSaveMessage" class="message" role="status"></div></div>
 <div class="freight-buttons"><button class="secondary" type="button" data-close="requestModal">Back</button><button class="ai-primary" id="saveRequest" type="submit">▣ Create Request</button><button type="button" class="secondary hidden" id="backToSource">Back to source</button></div>
 </form></div></div>
-<div class="modal" id="teamModal" role="dialog" aria-label="Manage colleagues"><div class="modalbox wide"><h2>Team administration</h2><button class="close" type="button" data-close="teamModal" aria-label="Close team management">×</button><p>Manage access to the GESTUS team. Removing access keeps requests and messages.</p><button class="primary" id="teamInvite">＋ Invite colleague</button><div id="teamMessage" class="message hidden" role="status"></div><div class="team-filters"><input id="teamSearch" type="search" placeholder="Search by name or email…" aria-label="Search colleagues"><select id="teamRoleFilter" aria-label="Filter colleague role"><option value="">All roles</option><option value="admin">Admin</option><option value="sales">Sales</option><option value="transport">Transport</option></select><select id="teamStatusFilter" aria-label="Filter colleague status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div><div id="teamList" class="team-list"></div></div></div>
+<div class="modal" id="deleteRequestModal" role="dialog" aria-label="Delete own request"><div class="modalbox"><h2 id="deleteRequestTitle">Delete request?</h2><button class="close" type="button" data-close="deleteRequestModal" aria-label="Close delete request">×</button><p>Remove this request from the list? Its data and messages will be preserved. You can restore it using Undo.</p><div id="deleteRequestError" class="message hidden" role="status"></div><div class="modalfoot"><button class="secondary" type="button" data-close="deleteRequestModal">Cancel</button><button class="primary" type="button" id="confirmDeleteRequest">Delete</button></div></div></div><div class="modal" id="teamModal" role="dialog" aria-label="Manage colleagues"><div class="modalbox wide"><h2>Team administration</h2><button class="close" type="button" data-close="teamModal" aria-label="Close team management">×</button><p>Manage access to the GESTUS team. Removing access keeps requests and messages.</p><button class="primary" id="teamInvite">＋ Invite colleague</button><div id="teamMessage" class="message hidden" role="status"></div><div class="team-filters"><input id="teamSearch" type="search" placeholder="Search by name or email…" aria-label="Search colleagues"><select id="teamRoleFilter" aria-label="Filter colleague role"><option value="">All roles</option><option value="admin">Admin</option><option value="sales">Sales</option><option value="transport">Transport</option></select><select id="teamStatusFilter" aria-label="Filter colleague status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div><div id="teamList" class="team-list"></div></div></div>
 <div class="modal" id="teamConfirmModal" role="dialog" aria-label="Confirm colleague access change"><div class="modalbox"><h2 id="teamConfirmTitle">Remove access?</h2><p id="teamConfirmText"></p><div class="modalfoot"><button class="secondary" data-close="teamConfirmModal" type="button">Cancel</button><button class="primary" id="teamConfirmAction" type="button">Confirm</button></div></div></div><div class="modal" id="inviteModal"><div class="modalbox">
   <div class="modalhead"><h2>Invite a colleague</h2><button class="close" data-close="inviteModal">×</button></div>
   <p>They’ll receive an email invitation and join the shared request list after accepting it.</p>
@@ -226,7 +227,7 @@ el("statusFilter").className="filter "+(status?statusClass(status):"");
     const next=activeDepartment==="sales"?'<select class="row-status-select" data-request-status="'+row.id+'" aria-label="Status for request #'+row.id+'"><option value="" selected disabled>Status</option>'+REQUEST_STATUSES.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")+'</select>':"";
     const hasPriceComment=!!String(row.price_comment||"").trim();
     const edit=activeDepartment==="transport"?'<button type="button" class="action icon-action'+(hasPriceComment?' has-price-comment':'')+'" data-comment="'+row.id+'" title="Edit price comment" aria-label="Edit price comment for request #'+row.id+'">✎</button>':(row.created_by===currentUser.id?'<button type="button" class="action icon-action'+(hasPriceComment?' has-price-comment':'')+'" data-edit="'+row.id+'" title="Edit my request" aria-label="Edit request #'+row.id+'">✎</button>':(hasPriceComment?'<span class="action icon-action has-price-comment" role="img" aria-label="Price comment left">✎</span>':""));
-    return '<tr data-request-id="'+row.id+'" class="request-'+statusClass(row.status)+'"><td><div class="reqid">#'+row.id+'</div><div class="owner-label">'+escapeHtml(ownerInitials(owner,row.created_by))+'</div>'+(row.edited_at?'<div class="edited-label" title="Request details edited '+escapeHtml(new Date(row.edited_at).toLocaleString())+'">✏️ edited</div>':"")+'<span class="status owner-status '+statusClass(row.status)+'">'+escapeHtml(row.status)+'</span></td><td class="route">'+route+'</td><td class="cargo"><b>'+cargo+'</b>'+(row.client?'<div class="company">▤ '+escapeHtml(row.client)+'</div>':"")+'</td><td class="status-cell">'+(row.price_eur?'<div class="status-price">'+Number(row.price_eur).toLocaleString("en-US")+' €</div>'+(row.price_entered_by?'<div class="price-author" title="'+escapeHtml(row.price_entered_name||"Price author")+'">'+escapeHtml(ownerInitials(row.price_entered_name,row.price_entered_by))+'</div>':""):"")+'</td><td class="date">'+createdLabel(row.created_at)+'</td><td><div class="actions">'+price+next+edit+'<button type="button" class="action icon-action" data-chat="'+row.id+'" title="Chat about this cargo" aria-label="Chat about request #'+row.id+'">💬</button><button type="button" class="action icon-action" data-copy="'+row.id+'" title="Copy cargo details" aria-label="Copy request #'+row.id+' details">▣</button><button type="button" class="action icon-action" data-maps="'+row.id+'" title="Open route in Google Maps" aria-label="Open request #'+row.id+' route in Google Maps">↗</button></div>'+priceComment+'</td></tr>';
+    return '<tr data-request-id="'+row.id+'" class="request-'+statusClass(row.status)+'"><td><div class="reqid">#'+row.id+'</div><div class="owner-label">'+escapeHtml(ownerInitials(owner,row.created_by))+'</div>'+(row.edited_at?'<div class="edited-label" title="Request details edited '+escapeHtml(new Date(row.edited_at).toLocaleString())+'">✏️ edited</div>':"")+'<span class="status owner-status '+statusClass(row.status)+'">'+escapeHtml(row.status)+'</span></td><td class="route">'+route+'</td><td class="cargo"><b>'+cargo+'</b>'+(row.client?'<div class="company">▤ '+escapeHtml(row.client)+'</div>':"")+'</td><td class="status-cell">'+(row.price_eur?'<div class="status-price">'+Number(row.price_eur).toLocaleString("en-US")+' €</div>'+(row.price_entered_by?'<div class="price-author" title="'+escapeHtml(row.price_entered_name||"Price author")+'">'+escapeHtml(ownerInitials(row.price_entered_name,row.price_entered_by))+'</div>':""):"")+'</td><td class="date">'+createdLabel(row.created_at)+'</td><td><div class="actions">'+price+next+edit+'<button type="button" class="action icon-action" data-chat="'+row.id+'" title="Chat about this cargo" aria-label="Chat about request #'+row.id+'">💬</button><button type="button" class="action icon-action" data-copy="'+row.id+'" title="Copy cargo details" aria-label="Copy request #'+row.id+' details">▣</button><button type="button" class="action icon-action" data-maps="'+row.id+'" title="Open route in Google Maps" aria-label="Open request #'+row.id+' route in Google Maps">↗</button>'+(row.created_by===currentUser.id?'<button type="button" class="action icon-action delete-request" data-delete-request="'+row.id+'" title="Delete my request" aria-label="Delete request #'+row.id+'">🗑️</button>':"")+'</div>'+priceComment+'</td></tr>';
   }).join("")||'<tr><td colspan="6" class="empty">No requests found. Use “New request” to add one for your team.</td></tr>';
   document.querySelectorAll("[data-status] .count").forEach(node=>{const value=node.parentElement.dataset.status;node.textContent=value==="All"?requests.length:requests.filter(r=>r.status===value).length});
   el("pageText").textContent="Showing "+filtered.length+" of "+requests.length+" requests";
@@ -242,7 +243,7 @@ el("ownerFilter").value=[...el("ownerFilter").options].some(option=>option.value
 }
 async function loadRequests(){
   if(!currentUser)return;
-  const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).order("created_at",{ascending:false});
+  const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).is("deleted_at",null).order("created_at",{ascending:false});
   if(error){toast("Could not load requests: "+error.message);return}
   requests=(data||[]).map(row=>Object.assign({},row,{creator_email:row.created_by===currentUser.id?currentUser.email:"Team"}));
   renderRequests();
@@ -572,6 +573,9 @@ await loadRequests();toast("Status updated");
 }catch(error){toast("Could not update status: "+error.message);selector.value="";selector.disabled=false}
 };
 el("rows").onclick=async event=>{
+ const deleteButton=event.target.closest("[data-delete-request]");
+ if(deleteButton){const row=requests.find(r=>String(r.id)===deleteButton.dataset.deleteRequest);if(!row||row.created_by!==currentUser.id)return;pendingDeleteRequest=row.id;el("deleteRequestTitle").textContent="Delete request #"+row.id+"?";showMessage("deleteRequestError","",false);el("deleteRequestModal").classList.add("show");return}
+
   const commentButton=event.target.closest("[data-comment]");if(commentButton){openPricePopover(commentButton,true);return}
   const editButton=event.target.closest("[data-edit]");if(editButton){const row=requests.find(item=>String(item.id)===editButton.dataset.edit);if(activeDepartment==="sales"&&row&&row.created_by===currentUser.id)openFreightRequest("manual",row);return}
   const chat=event.target.closest("[data-chat]");if(chat){await openChat(chat.dataset.chat);return}
@@ -629,6 +633,24 @@ el("priceForm").onsubmit=async event=>{
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
   finally{save.disabled=false}
 };
+
+let pendingDeleteRequest=null,lastDeletedRequest=null;
+el("confirmDeleteRequest").onclick=async()=>{
+ if(!pendingDeleteRequest)return;
+ const row=requests.find(r=>r.id===pendingDeleteRequest);if(!row||row.created_by!==currentUser.id)return;
+ el("confirmDeleteRequest").disabled=true;
+ const {error}=await db.rpc("set_own_request_deleted",{p_request_id:row.id,p_deleted:true});
+ el("confirmDeleteRequest").disabled=false;
+ if(error){showMessage("deleteRequestError",error.message,true);return}
+ lastDeletedRequest=row.id;pendingDeleteRequest=null;el("deleteRequestModal").classList.remove("show");await loadRequests();el("undoRequestDelete").classList.remove("hidden");toast("Request removed. Use Undo to restore.");
+};
+el("undoRequestDelete").onclick=async()=>{
+ if(!lastDeletedRequest)return;el("undoRequestDelete").disabled=true;
+ const {error}=await db.rpc("set_own_request_deleted",{p_request_id:lastDeletedRequest,p_deleted:false});
+ el("undoRequestDelete").disabled=false;if(error){toast(error.message);return}
+ lastDeletedRequest=null;el("undoRequestDelete").classList.add("hidden");await loadRequests();toast("Request restored");
+};
+
 el("refreshRequests").onclick=loadRequests;
 el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
 el("groupFilter").addEventListener("change",renderRequests);
