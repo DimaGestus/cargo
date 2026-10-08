@@ -222,11 +222,12 @@ function ownerInitials(name,userId){
   const parts=String(name||"").split("@")[0].split(/[\s._-]+/).filter(Boolean);
   return parts.slice(0,2).map(part=>part[0]).join("").toUpperCase()||"TM";
 }
+let exactRequestSearch=null;
 function renderRequests(){
   const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
   const group=el("groupFilter").value,ownerFilter=activeDepartment==="sales"?el("ownerFilter").value:"all";
 el("statusFilter").className="filter "+(status?statusClass(status):"");
-  const filtered=requests.filter(row=>requestGroup(row)===group&&(ownerFilter==="all"||(ownerFilter==="mine"?row.created_by===currentUser.id:row.created_by===ownerFilter))&&(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&(!load||row.loading_country.startsWith(load))&&(!delivery||row.delivery_country.startsWith(delivery)));
+  const filtered=requests.filter(row=>exactRequestSearch!==null?String(row.id)===exactRequestSearch:requestGroup(row)===group&&(ownerFilter==="all"||(ownerFilter==="mine"?row.created_by===currentUser.id:row.created_by===ownerFilter))&&(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&(!load||row.loading_country.startsWith(load))&&(!delivery||row.delivery_country.startsWith(delivery)));
   el("rows").innerHTML=filtered.map(row=>{
     const owner=requestOwners.find(item=>item.user_id===row.created_by)?.display_name||(row.created_by===currentUser.id?(currentUser.email||"You").split("@")[0]:"Team member");
     const cargo=[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).map(escapeHtml).join(" • ");
@@ -730,7 +731,14 @@ el("refreshRequests").onclick=loadRequests;
 el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
 el("groupFilter").addEventListener("change",renderRequests);
 el("ownerFilter").addEventListener("change",renderRequests);
-["query","statusFilter","loadCountry","deliveryCountry"].forEach(id=>el(id).addEventListener("input",renderRequests));
+["query","statusFilter","loadCountry","deliveryCountry"].forEach(id=>el(id).addEventListener("input",()=>{exactRequestSearch=null;renderRequests()}));
+el("query").addEventListener("keydown",event=>{
+ if(event.key!=="Enter")return;
+ event.preventDefault();
+ const value=el("query").value.trim().replace(/^#/,"");
+ exactRequestSearch=/^\d+$/.test(value)?String(Number(value)):null;
+ renderRequests();
+});
 db.auth.onAuthStateChange((_event,session)=>{if(_event==="PASSWORD_RECOVERY")passwordPromptPending=true;setTimeout(()=>{if(session?.user)enterApp(session.user);else{stopRequestUpdates();closeChat();el("chatLauncher").classList.add("hidden");currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
 const {data:{session}}=await db.auth.getSession();
 if(session?.user)await enterApp(session.user);
