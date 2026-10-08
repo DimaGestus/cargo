@@ -10,4 +10,15 @@ begin
 end; $$;
 revoke all on function public.set_own_request_deleted(bigint,boolean) from public,anon;
 grant execute on function public.set_own_request_deleted(bigint,boolean) to authenticated;
+create or replace function public.guard_request_deletion()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+ if new.deleted_at is distinct from old.deleted_at and (auth.uid() is null or auth.uid() is distinct from old.created_by) then
+ raise exception 'Only the request author can delete or restore this request';
+ end if;
+ return new;
+end; $$;
+drop trigger if exists guard_request_deletion on public.transport_requests;
+create trigger guard_request_deletion before update on public.transport_requests for each row execute function public.guard_request_deletion();
 commit;
+
