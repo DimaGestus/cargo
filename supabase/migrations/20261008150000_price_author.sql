@@ -2,7 +2,7 @@ begin;
 alter table public.transport_requests add column if not exists price_entered_by uuid;
 alter table public.transport_requests add column if not exists price_entered_name text;
 create or replace function public.track_freight_price_author()
-returns trigger language plpgsql set search_path = '' as $$
+returns trigger language plpgsql security definer set search_path = '' as $$
 begin
  if new.price_eur is not null and (new.price_eur is distinct from old.price_eur or new.price_entered_by is distinct from old.price_entered_by) then
   if auth.uid() is not null then
