@@ -196,7 +196,7 @@ const stops=row[kind+"_stops"];
 return stops?.length?stops:[kind==="loading"?{country:row.loading_country,postcode:row.loading_postcode,location:row.loading_city,date:row.pickup_date}:{country:row.delivery_country,postcode:row.delivery_postcode,location:row.delivery_city,date:row.delivery_date}];
 }
 function renderRouteStops(row){
-const render=stop=>'<div><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong> <strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(stop.location)+'<small>'+escapeHtml([stop.time_from?(stop.fixed_time?"Fixed: ":"")+stop.time_from+(stop.time_to&&!stop.fixed_time?"–"+stop.time_to:""):"",stop.comment].filter(Boolean).join(" · "))+'</small></div>';
+const render=stop=>'<div><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong> <strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(stop.location)+'<small>'+escapeHtml([stop.time_from?(stop.fixed_time?"Fixed: ":"")+stop.time_from+(stop.time_to&&!stop.fixed_time?"–"+stop.time_to:""):"",stop.comment?"💬 "+stop.comment:""].filter(Boolean).join(" · "))+'</small></div>';
 return '<div class="route-stops"><div>'+rowStops(row,"loading").map(render).join("")+'</div><span class="arrow">→</span><div>'+rowStops(row,"delivery").map(render).join("")+'</div></div>'+(row.note?'<small>'+escapeHtml(row.note)+'</small>':"");
 }
 function ownerInitials(name,userId){
