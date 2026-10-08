@@ -262,7 +262,7 @@ function startRequestUpdates(){
  stopRequestUpdates();
  requestsChannel=db.channel("workspace-requests-"+WORKSPACE_ID+"-"+currentUser.id)
  .on("postgres_changes",{event:"*",schema:"public",table:"transport_requests",filter:"workspace_id=eq."+WORKSPACE_ID},scheduleRequestRefresh)
- .subscribe(status=>{if(status==="SUBSCRIBED")scheduleRequestRefresh()});
+ .subscribe(status=>{el("rows").dataset.liveUpdates=status;if(status==="SUBSCRIBED")scheduleRequestRefresh()});
  requestsPollTimer=setInterval(refreshLiveRequests,5000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRequestRefresh()});
