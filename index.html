@@ -62,6 +62,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 .filter-field select.accepted{color:#14773b;background:#e0f6e7}
 .edited-label{margin-top:5px;color:#e58a23;font-size:11px;font-weight:500}
 .chat-request-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.chat-request-heading #chatOpenRequest{color:#245ef3;white-space:nowrap;padding:0 0 8px}tbody tr.chat-opened-request{outline:2px solid #3b67ed;outline-offset:-2px}
+.chat-owner-initials{display:inline-block;margin-left:5px;color:#2457bd;font-size:13px;font-weight:700}
 </style>
 </head>
 <body>
@@ -433,7 +434,7 @@ async function loadChatInbox(){
   const latest=new Map();inboxMessages.forEach(message=>{if(!latest.has(String(message.request_id)))latest.set(String(message.request_id),message)});
   const rows=[...latest].map(([id,message])=>({row:requests.find(r=>String(r.id)===id),message})).filter(item=>item.row);
   if(currentChatRequest&&!latest.has(String(currentChatRequest.id)))rows.unshift({row:currentChatRequest,message:null});
-  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong><small>'+escapeHtml(message?new Date(message.created_at).toLocaleDateString():"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a private conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
+  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong> <span class="chat-owner-initials">'+escapeHtml(ownerInitials(requestOwners.find(owner=>owner.user_id===row.created_by)?.display_name||row.creator_email,row.created_by))+'</span><small>'+escapeHtml(message?new Date(message.created_at).toLocaleDateString():"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a private conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
 }
 el("chatLauncher").onclick=async()=>{
   if(el("chatModal").classList.contains("show")){await closeChat();return}
