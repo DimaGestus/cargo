@@ -457,11 +457,11 @@ async function loadChatThreads(){
     if(error){el("chatStatus").textContent="Could not load conversations: "+error.message;return}
     const peers=[...new Set([...(data||[]).map(item=>item.sender_id===row.created_by?item.recipient_id:item.sender_id),currentUser.id,...requestOwners.map(owner=>owner.user_id)].filter(id=>id))];
     const previous=currentChatPeer;
-    currentChatPeer=peers.includes(previous)?previous:(peers[0]||null);
+    currentChatPeer=currentUser.id;
     selector.innerHTML=peers.map(id=>'<option value="'+escapeHtml(id)+'">'+escapeHtml(id===currentUser.id?"Я сам (тест чата)":requestOwners.find(owner=>owner.user_id===id)?.display_name||("Colleague · "+String(id).slice(0,8)))+'</option>').join("");
-    selector.classList.toggle("hidden",peers.length===0);selector.disabled=peers.length===0;
+    selector.classList.add("hidden");selector.disabled=true;
     if(currentChatPeer)selector.value=currentChatPeer;
-    el("chatStatus").textContent=peers.length===0?"You created this request. Invite a colleague to start a private conversation.":"You created this request. Choose a colleague above to message them.";
+    el("chatStatus").textContent="";
   }
   el("chatInput").disabled=!currentChatPeer;
   el("sendChatMessage").disabled=!currentChatPeer;
@@ -481,7 +481,7 @@ async function openChat(requestId){
   showChatDetail(true);el("chatLauncher").setAttribute("aria-expanded","true");
   currentChatRequest=row;currentChatPeer=row.created_by===currentUser.id?null:row.created_by;
   el("chatTitle").textContent="Private cargo chat · request #"+row.id;
-  el("chatSubtitle").textContent=(row.created_by===currentUser.id?"Choose a colleague conversation. Only you and that colleague can read it.":"Private messages to the cargo owner. Only you and the owner can read this conversation.")+" · "+row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
+  el("chatSubtitle").textContent=(row.created_by===currentUser.id?"Сообщения самому себе для проверки чата.":"Private messages to the cargo owner. Only you and the owner can read this conversation.")+" · "+row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
   el("chatStatus").textContent="";el("chatInput").value="";el("chatMessages").innerHTML='<div class="empty">Loading messages…</div>';el("chatModal").classList.add("show");
   await loadChatInbox();await loadChatThreads();await loadChatMessages();
   currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},async()=>{await loadChatInbox();await loadChatThreads();await loadChatMessages()}).subscribe();
