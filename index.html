@@ -323,7 +323,7 @@ async function enterApp(user){
   if(passwordPromptPending)openPasswordForm();
 }
 document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>{if(button.dataset.close==="chatModal")closeChat();else el(button.dataset.close).classList.remove("show")}));
-document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",event=>{if(event.target===modal){if(modal.id==="chatModal")closeChat();else modal.classList.remove("show")}}));
+document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",event=>{if(event.target===modal&&modal.id!=="requestModal"){if(modal.id==="chatModal")closeChat();else modal.classList.remove("show")}}));
 el("showBootstrap").onclick=()=>{el("loginPanel").classList.add("hidden");el("bootstrapPanel").classList.remove("hidden")};
 el("showLogin").onclick=()=>{el("bootstrapPanel").classList.add("hidden");el("loginPanel").classList.remove("hidden")};
 function openPasswordForm(){el("passwordForm").reset();showMessage("passwordMessage","",false);el("passwordModal").classList.add("show")}
