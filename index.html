@@ -188,7 +188,10 @@ const SUPABASE_URL="https://wkbmswyrbnqvtmzvmulv.supabase.co";
 const SUPABASE_KEY="sb_publishable_i1zo2QM56j7BsXVaS2hvzg_5Nq-N-ne";
 const WORKSPACE_ID="4dc0b1f4-0870-49cc-acbd-52003431ba2a";
 const APP_URL="https://dimagestus.github.io/cargo/";
-const passwordLinkFlow=new URLSearchParams(location.hash.slice(1)).get("type");
+const inviteQuery=new URLSearchParams(location.search);
+const passwordLinkFlow=new URLSearchParams(location.hash.slice(1)).get("type")||inviteQuery.get("type");
+const invitationToken=inviteQuery.get("token_hash");
+const authLinkError=new URLSearchParams(location.hash.slice(1)).get("error_description");
 let passwordPromptPending=["recovery","invite"].includes(passwordLinkFlow);
 const db=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let inboxMessages=[];
@@ -333,7 +336,7 @@ async function enterApp(user){
   await loadRequestOwners();
   await loadRequests();
   startRequestUpdates();
-  if(passwordPromptPending)openPasswordForm();
+  if(passwordPromptPending||user.user_metadata?.password_setup_required)openPasswordForm();
 }
 document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>{if(button.dataset.close==="chatModal")closeChat();else el(button.dataset.close).classList.remove("show")}));
 document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",event=>{if(event.target===modal&&modal.id!=="requestModal"){if(modal.id==="chatModal")closeChat();else modal.classList.remove("show")}}));
@@ -345,7 +348,7 @@ el("passwordForm").onsubmit=async event=>{
  event.preventDefault();
  if(el("newPassword").value!==el("confirmPassword").value){showMessage("passwordMessage","Passwords do not match.",true);return}
  el("savePassword").disabled=true;
- const {error}=await db.auth.updateUser({password:el("newPassword").value});
+ const {error}=await db.auth.updateUser({password:el("newPassword").value,data:{password_setup_required:false}});
  el("savePassword").disabled=false;
  if(error){showMessage("passwordMessage",error.message,true);return}
  el("passwordForm").reset();el("passwordModal").classList.remove("show");passwordPromptPending=false;toast("Password saved");
@@ -771,6 +774,13 @@ el("query").addEventListener("keydown",event=>{
  renderRequests();
 });
 db.auth.onAuthStateChange((_event,session)=>{if(_event==="PASSWORD_RECOVERY")passwordPromptPending=true;setTimeout(()=>{if(session?.user)enterApp(session.user);else{stopRequestUpdates();closeChat();el("chatLauncher").classList.add("hidden");currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
+if(invitationToken&&["invite","recovery"].includes(passwordLinkFlow)){
+  showMessage("loginMessage","Opening your personal invitation…",false);
+  const {error}=await db.auth.verifyOtp({token_hash:invitationToken,type:passwordLinkFlow});
+  const cleanUrl=new URL(location.href);cleanUrl.searchParams.delete("token_hash");cleanUrl.searchParams.delete("type");history.replaceState(null,"",cleanUrl.pathname+cleanUrl.search);
+  if(error){passwordPromptPending=false;showMessage("loginMessage","This invitation has expired or was already used. Ask your administrator for a new personal setup link.",true)}
+}
+if(authLinkError)showMessage("loginMessage","This invitation has expired or was already used. Ask your administrator for a new personal setup link.",true);
 const {data:{session}}=await db.auth.getSession();
 if(session?.user)await enterApp(session.user);
 </script>
