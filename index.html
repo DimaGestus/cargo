@@ -265,30 +265,40 @@ el("ownerFilter").innerHTML='<option value="mine">My requests</option><option va
 el("ownerFilter").value=[...el("ownerFilter").options].some(option=>option.value===selected)?selected:"mine";
 }
 
-let requestsChannel=null,requestsRefreshTimer=null,requestsPollTimer=null,requestsRefreshing=false;
+let requestsChannel=null,requestsRefreshTimer=null,requestsPollTimer=null,requestsRefreshing=false,requestsRefreshPending=false;
 function stopRequestUpdates(){
  if(requestsChannel){db.removeChannel(requestsChannel);requestsChannel=null}
  clearTimeout(requestsRefreshTimer);clearInterval(requestsPollTimer);
- requestsRefreshTimer=null;requestsPollTimer=null;
+ requestsRefreshTimer=null;requestsPollTimer=null;requestsRefreshPending=false;
 }
 async function refreshLiveRequests(){
- if(!currentUser||document.hidden||requestsRefreshing)return;
- requestsRefreshing=true;
- try{await loadRequestOwners();await loadRequests()}finally{requestsRefreshing=false}
+ if(!currentUser||document.hidden)return;
+ if(requestsRefreshing){requestsRefreshPending=true;return}
+ requestsRefreshing=true;requestsRefreshPending=false;
+ try{await Promise.all([loadRequestOwners(),loadRequests()])}
+ finally{
+   requestsRefreshing=false;
+   if(requestsRefreshPending&&currentUser&&!document.hidden)scheduleRequestRefresh();
+ }
 }
 function scheduleRequestRefresh(){
+ requestsRefreshPending=true;
  clearTimeout(requestsRefreshTimer);
- requestsRefreshTimer=setTimeout(refreshLiveRequests,150);
+ requestsRefreshTimer=setTimeout(refreshLiveRequests,100);
 }
 function startRequestUpdates(){
  stopRequestUpdates();
  requestsChannel=db.channel("workspace-requests-"+WORKSPACE_ID+"-"+currentUser.id)
  .on("postgres_changes",{event:"*",schema:"public",table:"transport_requests",filter:"workspace_id=eq."+WORKSPACE_ID},scheduleRequestRefresh)
- .subscribe(status=>{el("rows").dataset.liveUpdates=status;if(status==="SUBSCRIBED")scheduleRequestRefresh()});
- requestsPollTimer=setInterval(refreshLiveRequests,5000);
+ .subscribe(status=>{
+   el("rows").dataset.liveUpdates=status;
+   if(status==="SUBSCRIBED")scheduleRequestRefresh();
+ });
+ requestsPollTimer=setInterval(scheduleRequestRefresh,3000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRequestRefresh()});
 window.addEventListener("online",scheduleRequestRefresh);
+window.addEventListener("focus",scheduleRequestRefresh);
 
 async function loadRequests(){
   if(!currentUser)return;
