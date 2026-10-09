@@ -783,9 +783,9 @@ el("priceForm").onsubmit=async event=>{
   if(!priceCommentOnly&&(!Number.isFinite(value)||value<=0)){el("priceValue").reportValidity();return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
   try{
-    const {data,error}=await db.from("transport_requests").update(priceCommentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:value,price_comment:el("priceComment").value.trim()||null,status:"Price sent",price_entered_by:currentUser.id}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
+    const {data,error}=await db.from("transport_requests").update(priceCommentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:value,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(activeRequest))?.price_eur?{status:"Price sent"}:{}),price_entered_by:currentUser.id}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
-    const commentSaved=priceCommentOnly;closePricePopover();if(!commentSaved)el("statusFilter").value="Price sent";await loadRequests();toast(commentSaved?"Comment saved":"Price saved — Price sent");
+    const commentSaved=priceCommentOnly;closePricePopover();if(!commentSaved)el("statusFilter").value="";await loadRequests();toast(commentSaved?"Comment saved":"Price saved");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
   finally{save.disabled=false}
 };
