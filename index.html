@@ -247,7 +247,28 @@ function ownerInitials(name,userId){
   return parts.slice(0,2).map(part=>part[0]).join("").toUpperCase()||"TM";
 }
 let exactRequestSearch=null;
+let requestViewReady=false;
+const requestViewFields=["statusFilter","groupFilter","ownerFilter","query","loadCountry","deliveryCountry","loadPostcode","deliveryPostcode"];
+function saveRequestView(){
+ if(!requestViewReady||!currentUser)return;
+ const filters=Object.fromEntries(requestViewFields.map(id=>[id,el(id).value]));
+ try{localStorage.setItem("cargo-request-view-"+currentUser.id,JSON.stringify({department:activeDepartment,filters}))}catch{}
+}
+function restoreRequestView(){
+ let saved;try{saved=JSON.parse(localStorage.getItem("cargo-request-view-"+currentUser.id)||"null")}catch{}
+ if(saved){
+ if(isAdmin()&&["sales","transport"].includes(saved.department))setDepartment(saved.department);
+ for(const id of requestViewFields){
+ const value=saved.filters?.[id],node=el(id);if(typeof value!=="string")continue;
+ if(node.tagName==="SELECT"&&![...node.options].some(option=>option.value===value))continue;
+ node.value=value;
+ }
+ }
+ requestViewReady=true;
+}
+
 function renderRequests(){
+  saveRequestView();
   const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
   const group=el("groupFilter").value,ownerFilter=activeDepartment==="sales"?el("ownerFilter").value:"all";
 el("statusFilter").className="filter "+(status?statusClass(status):"");
@@ -367,6 +388,7 @@ if(changed){el("statusFilter").value="";if(department==="sales")el("ownerFilter"
 }
 el("departmentNav").onclick=event=>{const button=event.target.closest("[data-department]");if(button){closePricePopover();setDepartment(button.dataset.department)}};
 async function enterApp(user){
+  requestViewReady=false;
   currentUser=user;
   const {data:membership,error}=await db.from("workspace_members").select("role,employee_category").eq("workspace_id",WORKSPACE_ID).eq("user_id",user.id).maybeSingle();
   if(error||!membership){
@@ -383,6 +405,7 @@ async function enterApp(user){
   el("teamButton").classList.toggle("hidden",!["owner","admin"].includes(currentRole));
   el("authScreen").classList.add("hidden");el("appShell").classList.add("ready");
   await loadRequestOwners();
+  restoreRequestView();
   await loadRequests();
   startRequestUpdates();
   if(passwordPromptPending||user.user_metadata?.password_setup_required)openPasswordForm();
