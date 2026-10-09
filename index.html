@@ -37,7 +37,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 @media(max-width:600px){.chat-launcher{right:14px;bottom:22px}#chatModal{right:10px;bottom:90px;width:calc(100vw - 20px);height:min(620px,calc(100dvh - 110px))}.chat-layout{grid-template-columns:1fr}.chat-inbox{border-right:0}.chat-layout.has-conversation .chat-inbox{display:none}.chat-layout:not(.has-conversation) .chat-detail{display:none}.chat-back{display:inline-block!important}.chat-detail{padding:12px}}
 
 
-.price-popover{position:fixed;display:none;width:280px;z-index:16;padding:15px;background:#fff;border:1px solid #e3eaf4;border-radius:15px;box-shadow:0 8px 24px #122b3b24;max-height:calc(100dvh - 20px);overflow:auto}.price-popover.show{display:block}.price-input-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}.price-input-row input{width:100%;min-width:0;height:43px;border:1px solid #28d766;border-radius:10px;padding:10px;outline:none}.price-input-row input:focus{box-shadow:0 0 0 2px #28d76615}.price-input-row span{color:#8599b7;font-size:13px}.price-popover textarea{display:block;width:100%;height:58px;resize:vertical;border:1px solid #cbd6e5;border-radius:10px;padding:10px;outline:none}.price-popover textarea:focus{border-color:#8bb4ee}.price-popover input::placeholder,.price-popover textarea::placeholder{color:#97a4b8}.price-popover-foot{display:flex;gap:10px;margin-top:16px}.price-popover-foot button{flex:1;padding:9px;border-radius:10px}.price-popover-foot .secondary{border-color:#cbd6e5;font-weight:400;color:#425a7b}.price-popover-foot .primary{background:#a4e7bf;box-shadow:none;color:#fff}.price-popover-foot .primary:hover{background:#70d99b}.price-popover-foot button:disabled{opacity:.65;cursor:wait}.price-error{font-size:12px;line-height:1.4;color:#bc534c;margin-top:8px}.price-row-active{background:#dceaff!important}.price-comment-label{color:#283444;font-size:11px;max-width:220px;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:5px}
+.price-popover{position:fixed;display:none;width:280px;z-index:16;padding:15px;background:#fff;border:1px solid #e3eaf4;border-radius:15px;box-shadow:0 8px 24px #122b3b24;max-height:calc(100dvh - 20px);overflow:auto}.price-popover.show{display:block}.price-input-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}.price-input-row input{width:100%;min-width:0;height:43px;border:1px solid #28d766;border-radius:10px;padding:10px;outline:none}.price-input-row input:focus{box-shadow:0 0 0 2px #28d76615}.price-input-row span{color:#8599b7;font-size:13px}.price-popover textarea{display:block;width:100%;height:58px;resize:vertical;border:1px solid #cbd6e5;border-radius:10px;padding:10px;outline:none}.price-popover textarea:focus{border-color:#8bb4ee}.price-popover input::placeholder,.price-popover textarea::placeholder{color:#97a4b8}.price-popover-foot{display:flex;gap:10px;margin-top:16px}.price-popover-foot button{flex:1;padding:9px;border-radius:10px}.price-popover-foot .secondary{border-color:#cbd6e5;font-weight:400;color:#425a7b}.price-popover-foot .primary{background:#159957;box-shadow:none;color:#fff}.price-popover-foot .primary:hover{background:#70d99b}.price-popover-foot button:disabled{opacity:.65;cursor:wait}.price-error{font-size:12px;line-height:1.4;color:#bc534c;margin-top:8px}.price-row-active{background:#dceaff!important}.price-comment-label{color:#283444;font-size:11px;max-width:220px;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:5px}
 
 .department-nav{display:flex;align-items:center;gap:6px;margin-left:20px}.department-tab{border:0;border-radius:10px;background:#eff5ff;color:#245ef3;padding:10px 16px;font-weight:650}.department-tab.active{background:#245ef3;color:#fff}.admin-badge{font-size:12px;color:var(--muted);margin-right:4px}@media(max-width:760px){.department-nav{margin-left:0}.topbar{flex-wrap:wrap}.department-tab{padding:8px 12px}}
 .status.received{color:#178b49;background:#dcfce7}.status.no-price{color:#64748b;background:#eef2f6}.status.sent{color:#2457bd;background:#dbeafe}.status.waiting{color:#b87812;background:#fff1c2}.status.accepted{color:#12854a;background:#d9f7e4}.status.declined{color:#c34c52;background:#fee2e2}tr.request-received{background:#f1fff6}tr.request-accepted{background:#f3fcf7}tr.request-declined{background:#fff8f8}.status-cell{min-width:135px}.status-price{color:#008f7b;font-size:16px;font-weight:650;margin-top:6px}.row-status-select{width:67px;min-width:67px;max-width:67px;height:30px;padding:4px;border:1px solid var(--line);border-radius:6px;background:white;font-size:12px}.filter-field select.sent{color:#986000;background:#fff6d6}.filter-field select.received,.filter-field select.accepted{color:#178b49;background:#f0fff5}.filter-field select.waiting{color:#b87812;background:#fff9e9}.filter-field select.declined{color:#c34c52;background:#fff1f2}.filter-field select.no-price{color:#64748b;background:#f1f5f9}.owner-label{margin-top:5px;color:#2457bd;font-size:14px;font-weight:650}
@@ -259,6 +259,7 @@ el("statusFilter").className="filter "+(status?statusClass(status):"");
   document.querySelectorAll("[data-status] .count").forEach(node=>{const value=node.parentElement.dataset.status;node.textContent=value==="All"?requests.length:requests.filter(r=>r.status===value).length});
   el("pageText").textContent="Showing "+filtered.length+" of "+requests.length+" requests";
   document.querySelectorAll("[data-status]").forEach(button=>button.classList.toggle("active",button.dataset.status===(status||"All")));
+  positionPricePopover();
 }
 async function loadRequestOwners(){
 const {data,error}=await db.rpc("list_request_owners",{p_workspace_id:WORKSPACE_ID});
@@ -785,7 +786,13 @@ function closePricePopover(){
   priceAnchor=null;
 }
 function positionPricePopover(){
-  if(!priceAnchor||!priceAnchor.isConnected){closePricePopover();return}
+  if(!el("priceModal").classList.contains("show"))return;
+  if(!priceAnchor||!priceAnchor.isConnected){
+    const field=priceCommentOnly?"data-comment":"data-price";
+    priceAnchor=document.querySelector("["+field+'="'+String(activeRequest)+'"]');
+    if(priceAnchor)priceAnchor.closest("tr").classList.add("price-row-active");
+  }
+  if(!priceAnchor){return}
   const rect=priceAnchor.getBoundingClientRect(),box=el("priceModal");
   const width=Math.min(280,window.innerWidth-20);box.style.width=width+"px";
   const left=Math.max(10,Math.min(rect.right-width,window.innerWidth-width-10));
@@ -814,13 +821,13 @@ document.querySelector('[data-close="priceModal"]').onclick=closePricePopover;
 
 el("priceForm").onsubmit=async event=>{
   if(activeDepartment!=="transport"){event.preventDefault();return}
-  event.preventDefault();const value=Number(el("priceValue").value);
-  if(!priceCommentOnly&&(!Number.isFinite(value)||value<=0)){el("priceValue").reportValidity();return}
+  event.preventDefault();if(el("savePrice").disabled)return;const requestId=activeRequest,commentOnly=priceCommentOnly;const value=Number(el("priceValue").value);
+  if(!commentOnly&&(!Number.isFinite(value)||value<=0)){el("priceValue").reportValidity();return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
   try{
-    const {data,error}=await db.from("transport_requests").update(priceCommentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:value,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(activeRequest))?.price_eur?{status:"Price received"}:{}),price_entered_by:currentUser.id}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
+    const {data,error}=await db.from("transport_requests").update(commentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:value,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(requestId))?.price_eur?{status:"Price received"}:{}),price_entered_by:currentUser.id}).eq("id",requestId).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
-    const commentSaved=priceCommentOnly;closePricePopover();if(!commentSaved)el("statusFilter").value="";await loadRequests();toast(commentSaved?"Comment saved":"Price saved");
+    const commentSaved=commentOnly;closePricePopover();if(!commentSaved)el("statusFilter").value="";await loadRequests();toast(commentSaved?"Comment saved":"Price saved");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
   finally{save.disabled=false}
 };
