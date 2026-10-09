@@ -180,7 +180,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 </div></div>
 <div id="priceModal" class="price-popover" role="dialog" aria-label="Offer a price"><form id="priceForm"><div class="price-input-row"><input id="priceValue" type="number" min="0.01" step="0.01" required placeholder="0.00" aria-label="Transport price (€)"><span aria-hidden="true">€</span></div><textarea id="priceComment" maxlength="2000" placeholder="Comment (optional)" aria-label="Price comment"></textarea><div class="price-error hidden" id="priceError" role="status"></div><div class="price-popover-foot"><button class="secondary" type="button" data-close="priceModal">Cancel</button><button class="primary" id="savePrice" type="submit">Save</button></div></form></div>
 <button type="button" class="chat-launcher hidden" id="chatLauncher" aria-controls="chatModal" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v14H8l-4 4V4Z"/></svg>Chat</button>
-<div class="modal" id="chatModal" role="dialog" aria-label="Cargo messages"><div class="modalbox wide"><div class="chat-panel-head"><h2>Messages</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><div class="chat-layout" id="chatLayout"><div class="chat-inbox" id="chatInbox"></div><div class="chat-detail"><button type="button" class="linkbtn chat-back" id="chatBack" style="display:none;text-align:left;margin-bottom:10px">← Conversations</button><div class="chat-placeholder" id="chatPlaceholder">Select a conversation</div><div class="chat-request-heading"><h3 id="chatTitle" class="hidden">Cargo chat</h3><button type="button" class="linkbtn hidden" id="chatOpenRequest">↗ Open</button></div><p id="chatSubtitle" class="hidden"></p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div id="chatParticipants" class="hidden" style="font-size:12px;color:#718096;margin-bottom:10px"></div><div id="chatAddControls" class="hidden" style="display:flex;gap:6px;margin-bottom:10px"><select id="chatAddPerson" aria-label="Transport colleague to add" style="min-width:0;flex:1"></select><button type="button" class="secondary" id="chatAddButton">＋ Add colleague</button></div><div class="chat-messages hidden" id="chatMessages" aria-live="polite"></div><div class="chat-status hidden" id="chatStatus" aria-live="polite"></div><form class="chat-form hidden" id="chatForm"><textarea id="chatInput" maxlength="2000" required aria-label="Message" placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div></div></div>
+<div class="modal" id="chatModal" role="dialog" aria-label="Cargo messages"><div class="modalbox wide"><div class="chat-panel-head"><h2>Messages</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><div class="chat-layout" id="chatLayout"><div class="chat-inbox" id="chatInbox"></div><div class="chat-detail"><button type="button" class="linkbtn chat-back" id="chatBack" style="display:none;text-align:left;margin-bottom:10px">← Conversations</button><div class="chat-placeholder" id="chatPlaceholder">Select a conversation</div><div class="chat-request-heading"><h3 id="chatTitle" class="hidden">Cargo chat</h3><button type="button" class="linkbtn hidden" id="chatOpenRequest">↗ Open</button></div><p id="chatSubtitle" class="hidden"></p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div id="chatParticipants" class="hidden" style="font-size:12px;color:#718096;margin-bottom:10px"></div><div id="chatAddControls" class="hidden" style="display:flex;gap:6px;margin-bottom:10px"><button type="button" class="secondary" id="chatAddToggle" aria-label="Add Transport colleagues" aria-expanded="false" title="Add colleagues to this chat">＋</button><div id="chatAddPicker" class="hidden" style="flex:1;border:1px solid #dce3ef;border-radius:8px;padding:10px"><div id="chatAddChoices" style="display:grid;gap:7px;margin-bottom:10px"></div><button type="button" class="secondary" id="chatAddButton">Add selected</button></div></div><div class="chat-messages hidden" id="chatMessages" aria-live="polite"></div><div class="chat-status hidden" id="chatStatus" aria-live="polite"></div><form class="chat-form hidden" id="chatForm"><textarea id="chatInput" maxlength="2000" required aria-label="Message" placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div></div></div>
 <div class="toast" id="toast">Done</div>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.2";
@@ -656,18 +656,34 @@ async function loadChatParticipants(){
  el("chatParticipants").classList.remove("hidden");
  const candidates=chatPeople.filter(p=>!p.is_participant);
  el("chatAddControls").classList.toggle("hidden",!chatPeople.some(p=>p.can_add)||!candidates.length);
- const selected=el("chatAddPerson").value;
- el("chatAddPerson").innerHTML=candidates.map(p=>'<option value="'+escapeHtml(p.user_id)+'">'+escapeHtml(p.display_name)+'</option>').join("");
- if(candidates.some(p=>p.user_id===selected))el("chatAddPerson").value=selected;
+ const choices=el("chatAddChoices");
+ const signature=candidates.map(p=>p.user_id+":"+p.display_name).join("|");
+ if(choices.dataset.signature!==signature){
+ const selected=new Set([...choices.querySelectorAll("input:checked")].map(x=>x.value));
+ choices.innerHTML=candidates.map(p=>'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" value="'+escapeHtml(p.user_id)+'" '+(selected.has(p.user_id)?'checked':'')+'>'+escapeHtml(p.display_name)+'</label>').join("");
+ choices.dataset.signature=signature;
+ }
 }
+el("chatAddToggle").onclick=()=>{
+ const opening=el("chatAddPicker").classList.contains("hidden");
+ el("chatAddPicker").classList.toggle("hidden",!opening);
+ el("chatAddToggle").setAttribute("aria-expanded",String(opening));
+};
 el("chatAddButton").onclick=async()=>{
- if(!currentChatRequest||!currentChatPeer||!el("chatAddPerson").value)return;
- const button=el("chatAddButton");button.disabled=true;
- const {error}=await db.rpc("add_cargo_chat_participant",{p_request_id:currentChatRequest.id,p_peer_id:currentChatPeer,p_user_id:el("chatAddPerson").value});
- button.disabled=false;
- if(error){el("chatStatus").textContent="Could not add colleague: "+error.message;return}
- el("chatStatus").textContent="Colleague added — they can see this conversation and its history.";
- await loadChatParticipants();
+ const ids=[...el("chatAddChoices").querySelectorAll("input:checked")].map(x=>x.value);
+ if(!currentChatRequest||!currentChatPeer||!ids.length){el("chatStatus").textContent="Select colleagues to add to this chat.";return}
+ const requestId=currentChatRequest.id,peerId=currentChatPeer,button=el("chatAddButton");button.disabled=true;
+ let added=0;
+ try{
+ for(const id of ids){
+ const {error}=await db.rpc("add_cargo_chat_participant",{p_request_id:requestId,p_peer_id:peerId,p_user_id:id});
+ if(error)throw error;
+ added++;
+ }
+ el("chatStatus").textContent=added+" colleagues added to this chat. They can see its history and reply.";
+ el("chatAddPicker").classList.add("hidden");el("chatAddToggle").setAttribute("aria-expanded","false");
+ }catch(error){el("chatStatus").textContent=(added?added+" added. ":"")+"Could not add colleague: "+error.message}
+ finally{button.disabled=false;await loadChatParticipants()}
 };
 async function loadChatMessages(){
   if(!currentChatRequest)return;
@@ -681,7 +697,7 @@ async function openChat(requestId){
   const row=requests.find(item=>String(item.id)===String(requestId));if(!row)return;
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
   showChatDetail(true);el("chatLauncher").setAttribute("aria-expanded","true");
-  currentChatRequest=row;currentChatPeer=null;
+  currentChatRequest=row;currentChatPeer=null;el("chatAddPicker").classList.add("hidden");el("chatAddToggle").setAttribute("aria-expanded","false");el("chatAddChoices").innerHTML="";el("chatAddChoices").dataset.signature="";
   el("chatTitle").textContent="Cargo chat · request #"+row.id;
   el("chatSubtitle").textContent=row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
   el("chatStatus").textContent="";el("chatInput").value="";el("chatMessages").innerHTML='<div class="empty">Loading messages…</div>';el("chatModal").classList.add("show");
