@@ -309,13 +309,13 @@ function stopRequestUpdates(){
  requestsRefreshTimer=null;requestsPollTimer=null;requestsRefreshPending=false;
 }
 async function refreshLiveRequests(){
- if(!currentUser||document.hidden)return;
+ if(!currentUser)return;
  if(requestsRefreshing){requestsRefreshPending=true;return}
  requestsRefreshing=true;requestsRefreshPending=false;
  try{await Promise.all([loadRequestOwners(),loadRequests()])}
  finally{
    requestsRefreshing=false;
-   if(requestsRefreshPending&&currentUser&&!document.hidden)scheduleRequestRefresh();
+   if(requestsRefreshPending&&currentUser)scheduleRequestRefresh();
  }
 }
 function scheduleRequestRefresh(){
@@ -349,10 +349,22 @@ function pendingPriceAlerts(rows,isSales,seen){
  return isSales?rows.filter(row=>Number(row.price_eur)>0&&seen[String(row.id)]!==priceFingerprint(row)):[];
 }
 function readPriceSeen(){try{return JSON.parse(localStorage.getItem("cargo-price-seen-"+currentUser.id)||"{}")}catch{return {}}}
+const originalTabIcon=document.querySelector('link[rel="icon"]')?.href||"";
+function updatePriceTabBadge(count){
+ document.title=count?"🔔 ("+count+") New prices — GESTUS":"GESTUS — Team transport requests";
+ let icon=document.querySelector('link[rel="icon"]');
+ if(!icon){icon=document.createElement("link");icon.rel="icon";document.head.appendChild(icon)}
+ if(count){
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><text x="2" y="48" font-size="46">🔔</text><circle cx="49" cy="14" r="14" fill="#dc2626"/><text x="49" y="19" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="white">'+(count>99?"99+":count)+'</text></svg>';
+ icon.href="data:image/svg+xml,"+encodeURIComponent(svg);
+ }else if(originalTabIcon){icon.href=originalTabIcon}else{icon.remove()}
+}
+
 function refreshPriceAlerts(){
  const pending=pendingPriceAlerts(requests,currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales"),readPriceSeen());
  unreadPrices=new Map(pending.map(row=>[String(row.id),row]));
- document.title=pending.length?"🔔 ("+pending.length+") New prices — GESTUS":"GESTUS — Team transport requests";
+ updatePriceTabBadge(pending.length);
+ el("priceAlerts").dataset.updatedAt=String(Date.now());
  const newAlerts=pending.filter(row=>!announcedPrices.has(String(row.id)+":"+priceFingerprint(row)));
  pending.forEach(row=>announcedPrices.add(String(row.id)+":"+priceFingerprint(row)));
  if(newAlerts.length)toast("🔔 Price received for request #"+newAlerts.map(row=>row.id).join(", #"));
