@@ -595,8 +595,12 @@ el("requestForm").onsubmit=async event=>{
 };
 
 function cargoCopyText(row){
-  const route=(country,postcode,city)=>[country,postcode,city].filter(Boolean).join(" ");
-  return ["Loading: "+rowStops(row,"loading").map(s=>[s.country,s.postcode,s.location,s.date,s.time_from,s.time_to,s.comment].filter(Boolean).join(" ")).join(" → ")+" → Unloading: "+rowStops(row,"delivery").map(s=>[s.country,s.postcode,s.location,s.date,s.time_from,s.time_to,s.comment].filter(Boolean).join(" ")).join(" → "), row.client?"Customer: "+row.client:"", "Loading date: "+(row.pickup_date||""), "Delivery date: "+(row.delivery_date||""), "Cargo: "+[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).join(" · "), row.price_eur?"Price: "+Number(row.price_eur).toLocaleString("en-US")+" €":"", row.price_comment?"Price comment: "+row.price_comment:"", row.note?"Note: "+row.note:""].filter(Boolean).join("\n");
+ const singleLine=value=>String(value||"").replace(/\s+/g," ").trim();
+ const stops=[...rowStops(row,"loading"),...rowStops(row,"delivery")];
+ const route=stops.map(stop=>[singleLine(stop.country),singleLine(stop.postcode),singleLine(routeCity(stop))].filter(Boolean).join(" ")).join(" --> ");
+ const cargo=[singleLine(row.cargo_type),singleLine(row.temperature)].filter(Boolean).join(" ");
+ const exchange=(row.pallet_exchange||Number(row.pallet_count)===-1)?"Pallets to change":"No change";
+ return route+" ; "+[cargo,exchange].filter(Boolean).join(", ");
 }
 async function copyCargo(row){
   const text=cargoCopyText(row);
