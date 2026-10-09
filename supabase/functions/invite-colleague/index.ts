@@ -80,16 +80,18 @@ Deno.serve(async (req: Request) => {
       await admin.from("workspace_invites").update({
         status: "accepted", accepted_by: existing.id, accepted_at: new Date().toISOString(),
       }).eq("id", invite.id);
+      const { data: setup, error: setupError } = await admin.auth.admin.generateLink({type:"recovery",email,options:{redirectTo:APP_URL}});
+      if (!setupError && setup?.properties?.hashed_token) return json({ok:true,invitation_url:APP_URL+"?type=recovery&token_hash="+encodeURIComponent(setup.properties.hashed_token),message:"Copy this personal password setup link and send it only to "+email+". They choose their own password."});
       return json({ ok: true, message: "Existing account added to the team. Ask them to sign in with this email." });
     }
   }
 
   if (authInviteError.status === 429 || /rate|email|smtp|mail/i.test(authInviteError.message)) {
     const { data: link, error: linkError } = await admin.auth.admin.generateLink({
-      type: "invite", email, options: { redirectTo: APP_URL },
+      type: "invite", email, options: { redirectTo: APP_URL, data: { password_setup_required: true } },
     });
-    if (!linkError && link?.properties?.action_link) {
-      return json({ ok: true, invitation_url: link.properties.action_link,
+    if (!linkError && link?.properties?.hashed_token) {
+      return json({ ok: true, invitation_url: APP_URL + "?type=invite&token_hash=" + encodeURIComponent(link.properties.hashed_token),
         message: "Email delivery is unavailable. Copy this personal invitation link and send it only to " + email + ". They can set their password and join your team." });
     }
   }
