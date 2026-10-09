@@ -180,7 +180,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 </div></div>
 <div id="priceModal" class="price-popover" role="dialog" aria-label="Offer a price"><form id="priceForm"><div class="price-input-row"><input id="priceValue" type="number" min="0.01" step="0.01" required placeholder="0.00" aria-label="Transport price (€)"><span aria-hidden="true">€</span></div><textarea id="priceComment" maxlength="2000" placeholder="Comment (optional)" aria-label="Price comment"></textarea><div class="price-error hidden" id="priceError" role="status"></div><div class="price-popover-foot"><button class="secondary" type="button" data-close="priceModal">Cancel</button><button class="primary" id="savePrice" type="submit">Save</button></div></form></div>
 <button type="button" class="chat-launcher hidden" id="chatLauncher" aria-controls="chatModal" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v14H8l-4 4V4Z"/></svg>Chat</button>
-<div class="modal" id="chatModal" role="dialog" aria-label="Cargo messages"><div class="modalbox wide"><div class="chat-panel-head"><h2>Messages</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><div class="chat-layout" id="chatLayout"><div class="chat-inbox" id="chatInbox"></div><div class="chat-detail"><button type="button" class="linkbtn chat-back" id="chatBack" style="display:none;text-align:left;margin-bottom:10px">← Conversations</button><div class="chat-placeholder" id="chatPlaceholder">Select a conversation</div><div class="chat-request-heading"><h3 id="chatTitle" class="hidden">Cargo chat</h3><button type="button" class="linkbtn hidden" id="chatOpenRequest">↗ Open</button></div><p id="chatSubtitle" class="hidden"></p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div class="chat-messages hidden" id="chatMessages" aria-live="polite"></div><div class="chat-status hidden" id="chatStatus" aria-live="polite"></div><form class="chat-form hidden" id="chatForm"><textarea id="chatInput" maxlength="2000" required aria-label="Message" placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div></div></div>
+<div class="modal" id="chatModal" role="dialog" aria-label="Cargo messages"><div class="modalbox wide"><div class="chat-panel-head"><h2>Messages</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><div class="chat-layout" id="chatLayout"><div class="chat-inbox" id="chatInbox"></div><div class="chat-detail"><button type="button" class="linkbtn chat-back" id="chatBack" style="display:none;text-align:left;margin-bottom:10px">← Conversations</button><div class="chat-placeholder" id="chatPlaceholder">Select a conversation</div><div class="chat-request-heading"><h3 id="chatTitle" class="hidden">Cargo chat</h3><button type="button" class="linkbtn hidden" id="chatOpenRequest">↗ Open</button></div><p id="chatSubtitle" class="hidden"></p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div id="chatParticipants" class="hidden" style="font-size:12px;color:#718096;margin-bottom:10px"></div><div id="chatAddControls" class="hidden" style="display:flex;gap:6px;margin-bottom:10px"><select id="chatAddPerson" aria-label="Transport colleague to add" style="min-width:0;flex:1"></select><button type="button" class="secondary" id="chatAddButton">＋ Add colleague</button></div><div class="chat-messages hidden" id="chatMessages" aria-live="polite"></div><div class="chat-status hidden" id="chatStatus" aria-live="polite"></div><form class="chat-form hidden" id="chatForm"><textarea id="chatInput" maxlength="2000" required aria-label="Message" placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div></div></div>
 <div class="toast" id="toast">Done</div>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.2";
@@ -198,6 +198,7 @@ let inboxMessages=[];
 let requestOwners=[];
 const REQUEST_STATUSES=["Waiting for price","Price received","Price sent","Accepted","Declined","No price"];
 let currentCategory="transport",activeDepartment="transport";
+let chatPeople=[],chatPollBusy=false;
 let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
 function palletLabel(row){const count=Number(row.pallet_count)>0?row.pallet_count+" pallets":"";const exchange=(row.pallet_exchange||Number(row.pallet_count)===-1)?"Pallets to change":"No change";return [count,exchange].filter(Boolean).join(", ");}
@@ -596,17 +597,17 @@ function showChatDetail(show){
   el("chatLayout").classList.toggle("has-conversation",show);
   el("chatPlaceholder").classList.toggle("hidden",show);
   ["chatTitle","chatOpenRequest","chatSubtitle","chatMessages","chatStatus","chatForm"].forEach(id=>el(id).classList.toggle("hidden",!show));
-  if(!show)el("chatThread").classList.add("hidden");
+  if(!show){el("chatThread").classList.add("hidden");el("chatParticipants").classList.add("hidden");el("chatAddControls").classList.add("hidden");}
 }
 async function loadChatInbox(){
   el("chatInbox").innerHTML='<div class="chat-inbox-status">Loading conversations…</div>';
-  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("workspace_id",WORKSPACE_ID).or("sender_id.eq."+currentUser.id+",recipient_id.eq."+currentUser.id).order("created_at",{ascending:false});
+  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("workspace_id",WORKSPACE_ID).order("created_at",{ascending:false});
   if(error){el("chatInbox").innerHTML='<div class="chat-inbox-status">'+escapeHtml("Could not load conversations: "+error.message)+'</div>';return}
   inboxMessages=data||[];
   const latest=new Map(),started=new Map();inboxMessages.forEach(message=>{const id=String(message.request_id);if(!latest.has(id))latest.set(id,message);started.set(id,message.created_at)});
   const rows=[...latest].map(([id,message])=>({row:requests.find(r=>String(r.id)===id),message})).filter(item=>item.row);
   if(currentChatRequest&&!latest.has(String(currentChatRequest.id)))rows.unshift({row:currentChatRequest,message:null});
-  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong> <span class="chat-owner-initials">'+escapeHtml(ownerInitials(requestOwners.find(owner=>owner.user_id===row.created_by)?.display_name||row.creator_email,row.created_by))+'</span><small title="Conversation started">'+escapeHtml(message?new Date(started.get(String(row.id))).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}):"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a private conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
+  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong> <span class="chat-owner-initials">'+escapeHtml(ownerInitials(requestOwners.find(owner=>owner.user_id===row.created_by)?.display_name||row.creator_email,row.created_by))+'</span><small title="Conversation started">'+escapeHtml(message?new Date(started.get(String(row.id))).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}):"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
 }
 el("chatLauncher").onclick=async()=>{
   if(el("chatModal").classList.contains("show")){await closeChat();return}
@@ -622,38 +623,57 @@ el("chatOpenRequest").onclick=async()=>{
  const target=document.querySelector('[data-request-id="'+row.id+'"]');
  if(target){target.classList.add("chat-opened-request");target.scrollIntoView({behavior:"smooth",block:"center"});}
 };
+setInterval(async()=>{if(chatPollBusy||document.hidden||!el("chatModal").classList.contains("show"))return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},3000);
 el("chatBack").onclick=()=>{showChatDetail(false)};
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&el("chatModal").classList.contains("show"))closeChat()});
 
 function renderChatMessages(items){
   const box=el("chatMessages");
-  box.innerHTML=items.map(item=>'<div class="chat-message '+(item.sender_id===currentUser.id?"own":"")+'"><div class="chat-meta">'+escapeHtml(item.sender_id===currentUser.id?"You":item.sender_id===currentChatRequest.created_by?"Cargo owner":"Colleague · "+String(item.sender_id).slice(0,8))+" · "+escapeHtml(new Date(item.created_at).toLocaleString())+'</div><div class="chat-body">'+escapeHtml(item.message)+'</div></div>').join("")||'<div class="empty">No messages in this private conversation yet.</div>';
+  box.innerHTML=items.map(item=>'<div class="chat-message '+(item.sender_id===currentUser.id?"own":"")+'"><div class="chat-meta">'+escapeHtml(item.sender_id===currentUser.id?"You":chatPeople.find(p=>p.user_id===item.sender_id)?.display_name||requestOwners.find(p=>p.user_id===item.sender_id)?.display_name||"Colleague")+" · "+escapeHtml(new Date(item.created_at).toLocaleString())+'</div><div class="chat-body">'+escapeHtml(item.message)+'</div></div>').join("")||'<div class="empty">No messages in this conversation yet.</div>';
   box.scrollTop=box.scrollHeight;
 }
 async function loadChatThreads(){
-  const row=currentChatRequest;if(!row)return;
-  const selector=el("chatThread");
-  if(row.created_by!==currentUser.id){
-    currentChatPeer=row.created_by;selector.classList.add("hidden");selector.innerHTML="";
-  }else{
-    const {data,error}=await db.from("transport_messages").select("sender_id,recipient_id").eq("request_id",row.id).order("created_at",{ascending:false});
-    if(error){currentChatPeer=null;el("chatInput").disabled=true;el("sendChatMessage").disabled=true;el("chatStatus").textContent="Could not load conversations: "+error.message;return}
-    const existing=(data||[]).map(item=>item.sender_id===currentUser.id?item.recipient_id:item.sender_id);
-    const peers=[...new Set([...existing,row.price_entered_by,...requestOwners.map(owner=>owner.user_id)].filter(id=>id&&id!==currentUser.id))];
-    currentChatPeer=peers.includes(currentChatPeer)?currentChatPeer:existing.find(id=>peers.includes(id))||(peers.includes(row.price_entered_by)?row.price_entered_by:null);
-    selector.innerHTML='<option value="">Choose a colleague…</option>'+peers.map(id=>'<option value="'+escapeHtml(id)+'">'+escapeHtml(requestOwners.find(owner=>owner.user_id===id)?.display_name||("Colleague · "+String(id).slice(0,8)))+'</option>').join("");
-    selector.classList.remove("hidden");selector.disabled=false;selector.value=currentChatPeer||"";
-    el("chatStatus").textContent=currentChatPeer?"":"Choose a colleague to start a private conversation.";
-  }
-  el("chatInput").disabled=!currentChatPeer;
-  el("sendChatMessage").disabled=!currentChatPeer;
-  return !!currentChatPeer;
+ const row=currentChatRequest;if(!row)return;
+ const {data,error}=await db.rpc("cargo_chat_people",{p_request_id:row.id,p_peer_id:null});
+ if(error){el("chatStatus").textContent="Could not load colleagues: "+error.message;return}
+ const {data:messages,error:messageError}=await db.from("transport_messages").select("chat_peer_id").eq("request_id",row.id).order("created_at",{ascending:false});
+ if(messageError){el("chatStatus").textContent=messageError.message;return}
+ const existing=[...new Set((messages||[]).map(m=>m.chat_peer_id).filter(Boolean))];
+ const peers=[...new Set([...existing,...(data||[]).map(p=>p.peer_id)])].filter(id=>id!==row.created_by);
+ currentChatPeer=peers.includes(currentChatPeer)?currentChatPeer:existing[0]||(peers.includes(currentUser.id)?currentUser.id:null);
+ const selector=el("chatThread");
+ selector.innerHTML='<option value="">Choose a colleague conversation…</option>'+peers.map(id=>'<option value="'+escapeHtml(id)+'">'+escapeHtml((data||[]).find(p=>p.user_id===id)?.display_name||requestOwners.find(p=>p.user_id===id)?.display_name||"Colleague")+'</option>').join("");
+ selector.value=currentChatPeer||"";selector.classList.toggle("hidden",peers.length===1);selector.disabled=false;
+ el("chatInput").disabled=!currentChatPeer;el("sendChatMessage").disabled=!currentChatPeer;
+ await loadChatParticipants();return !!currentChatPeer;
 }
+async function loadChatParticipants(){
+ if(!currentChatRequest||!currentChatPeer){el("chatParticipants").classList.add("hidden");el("chatAddControls").classList.add("hidden");return}
+ const {data,error}=await db.rpc("cargo_chat_people",{p_request_id:currentChatRequest.id,p_peer_id:currentChatPeer});
+ if(error){el("chatStatus").textContent=error.message;return}
+ chatPeople=data||[];
+ el("chatParticipants").textContent="Participants: "+chatPeople.filter(p=>p.is_participant).map(p=>p.display_name).join(", ");
+ el("chatParticipants").classList.remove("hidden");
+ const candidates=chatPeople.filter(p=>!p.is_participant);
+ el("chatAddControls").classList.toggle("hidden",!chatPeople.some(p=>p.can_add)||!candidates.length);
+ const selected=el("chatAddPerson").value;
+ el("chatAddPerson").innerHTML=candidates.map(p=>'<option value="'+escapeHtml(p.user_id)+'">'+escapeHtml(p.display_name)+'</option>').join("");
+ if(candidates.some(p=>p.user_id===selected))el("chatAddPerson").value=selected;
+}
+el("chatAddButton").onclick=async()=>{
+ if(!currentChatRequest||!currentChatPeer||!el("chatAddPerson").value)return;
+ const button=el("chatAddButton");button.disabled=true;
+ const {error}=await db.rpc("add_cargo_chat_participant",{p_request_id:currentChatRequest.id,p_peer_id:currentChatPeer,p_user_id:el("chatAddPerson").value});
+ button.disabled=false;
+ if(error){el("chatStatus").textContent="Could not add colleague: "+error.message;return}
+ el("chatStatus").textContent="Colleague added — they can see this conversation and its history.";
+ await loadChatParticipants();
+};
 async function loadChatMessages(){
   if(!currentChatRequest)return;
   if(!currentChatPeer){renderChatMessages([]);return}
   const filter="and(sender_id.eq."+currentUser.id+",recipient_id.eq."+currentChatPeer+"),and(sender_id.eq."+currentChatPeer+",recipient_id.eq."+currentUser.id+")";
-  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("request_id",currentChatRequest.id).or(filter).order("created_at",{ascending:true}).order("id",{ascending:true});
+  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("request_id",currentChatRequest.id).eq("chat_peer_id",currentChatPeer).order("created_at",{ascending:true}).order("id",{ascending:true});
   if(error){el("chatStatus").textContent="Could not load messages: "+error.message;return}
   renderChatMessages(data||[]);
 }
@@ -661,23 +681,23 @@ async function openChat(requestId){
   const row=requests.find(item=>String(item.id)===String(requestId));if(!row)return;
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
   showChatDetail(true);el("chatLauncher").setAttribute("aria-expanded","true");
-  currentChatRequest=row;currentChatPeer=row.created_by===currentUser.id?null:row.created_by;
-  el("chatTitle").textContent="Private cargo chat · request #"+row.id;
+  currentChatRequest=row;currentChatPeer=null;
+  el("chatTitle").textContent="Cargo chat · request #"+row.id;
   el("chatSubtitle").textContent=row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
   el("chatStatus").textContent="";el("chatInput").value="";el("chatMessages").innerHTML='<div class="empty">Loading messages…</div>';el("chatModal").classList.add("show");
   await loadChatInbox();await loadChatThreads();await loadChatMessages();
   currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},async()=>{await loadChatInbox();await loadChatThreads();await loadChatMessages()}).subscribe();
 }
-el("chatThread").onchange=async event=>{currentChatPeer=event.target.value||null;el("chatStatus").textContent="";await loadChatMessages();el("chatInput").disabled=!currentChatPeer;el("sendChatMessage").disabled=!currentChatPeer};
+el("chatThread").onchange=async event=>{currentChatPeer=event.target.value||null;el("chatStatus").textContent="";await loadChatParticipants();await loadChatMessages();el("chatInput").disabled=!currentChatPeer;el("sendChatMessage").disabled=!currentChatPeer};
 async function closeChat(){
   el("chatModal").classList.remove("show");el("chatLauncher").setAttribute("aria-expanded","false");showChatDetail(false);currentChatRequest=null;currentChatPeer=null;
   if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
 }
 el("chatForm").onsubmit=async event=>{
-  event.preventDefault();if(!currentChatRequest||!currentChatPeer||currentChatPeer===currentUser.id)return;
+  event.preventDefault();if(!currentChatRequest||!currentChatPeer)return;
   const message=el("chatInput").value.trim();if(!message)return;
   const send=el("sendChatMessage");send.disabled=true;el("chatStatus").textContent="Sending…";
-  const {error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,recipient_id:currentChatPeer,message});
+  const {error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,recipient_id:currentChatRequest.created_by===currentUser.id?currentChatPeer:currentChatRequest.created_by,chat_peer_id:currentChatPeer,message});
   send.disabled=false;
   if(error){el("chatStatus").textContent="Could not send message: "+error.message;return}
   el("chatInput").value="";el("chatStatus").textContent="";await loadChatMessages();await loadChatInbox();el("chatInput").focus();
