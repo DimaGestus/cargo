@@ -84,6 +84,15 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  if (authInviteError.status === 429 || /rate|email|smtp|mail/i.test(authInviteError.message)) {
+    const { data: link, error: linkError } = await admin.auth.admin.generateLink({
+      type: "invite", email, options: { redirectTo: APP_URL },
+    });
+    if (!linkError && link?.properties?.action_link) {
+      return json({ ok: true, invitation_url: link.properties.action_link,
+        message: "Email delivery is unavailable. Copy this personal invitation link and send it only to " + email + ". They can set their password and join your team." });
+    }
+  }
   await admin.from("workspace_invites").delete().eq("id", invite.id);
-  return json({ error: "Could not send the invitation email. Check the address and try again." }, 400);
+  return json({ error: "Invitation email failed: " + authInviteError.message }, authInviteError.status === 429 ? 429 : 400);
 });
