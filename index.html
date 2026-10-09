@@ -75,6 +75,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 .stop-head [data-remove-stop]{color:#ef233c;font-size:17px;font-weight:700}.stop-head [data-duplicate-stop]{color:#5276c4;font-size:17px}
 #viewRequestModal{z-index:45}.request-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.request-detail-stop{padding:14px;background:#f8fafc;border:1px solid var(--line);border-radius:9px;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}.request-detail-stop p{margin:6px 0;color:var(--ink)}.request-detail-summary{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;border-top:1px solid var(--line);padding-top:15px}@media(max-width:650px){.request-detail-grid{grid-template-columns:1fr}}.price-alerts{margin:0 0 14px;padding:12px;border:1px solid #86dba1;border-radius:9px;background:#effdf4}.price-alerts-title{font-weight:650;font-size:13px;margin-bottom:7px}.price-alert-list{display:flex;gap:7px;flex-wrap:wrap}.price-alert-list button{border:1px solid #86dba1;border-radius:7px;background:white;color:#14773b;padding:7px 10px;font-size:12px}.price-unread-marker{display:block;margin-top:6px;color:#08783e;font-size:11px;font-weight:700;animation:price-pulse 1.4s ease-in-out infinite}tr.price-unread td:first-child{box-shadow:inset 4px 0 #22c55e}@keyframes price-pulse{0%,100%{opacity:1}50%{opacity:.35}}@media(prefers-reduced-motion:reduce){.price-unread-marker{animation:none}}
 td:last-child:has(.actions){min-width:260px}.actions .row-status-select{flex-shrink:0}
+.price-notification-popup{position:fixed;right:22px;bottom:86px;z-index:25;width:min(330px,calc(100vw - 28px));max-height:40vh;overflow:auto;background:white;border:1px solid #86dba1;border-radius:12px;padding:12px;box-shadow:0 6px 24px #17332a26}.price-notification-popup strong{display:block;font-size:13px;margin-bottom:8px}.price-notification-popup button{display:block;text-align:left;width:100%;padding:9px;margin-top:6px;border:1px solid #bbf7d0;border-radius:7px;background:#f0fdf4;color:#146c3a;font-size:12px}.price-notification-popup small{display:block;margin-top:4px;color:#50735e}
 </style>
 </head>
 <body>
@@ -139,7 +140,7 @@ td:last-child:has(.actions){min-width:260px}.actions .row-status-select{flex-shr
 <label class="filter-field hidden" id="ownerFilterField"><span>Owner</span><select id="ownerFilter" class="filter"><option value="mine">My requests</option><option value="all" selected>All requests</option></select></label>
 <label class="filter-field hidden" id="statusFilterField"><span>Status</span><select id="statusFilter" class="filter"><option value="">All</option><option>Waiting for price</option><option>Price received</option><option>Price sent</option><option>Accepted</option><option>Declined</option><option>No price</option></select></label>
       </div>
-      <div id="priceAlerts" class="price-alerts hidden" role="status" aria-live="polite"><div class="price-alerts-title">🔔 New prices from Transport</div><div id="priceAlertList" class="price-alert-list"></div></div><div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Price</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
+      <aside id="priceNotificationPopup" class="price-notification-popup hidden" aria-label="New price notifications" role="status" aria-live="polite"><strong>🔔 New prices received</strong><div id="priceNotificationItems"></div></aside><div id="priceAlerts" class="price-alerts hidden" role="status" aria-live="polite"><div class="price-alerts-title">🔔 New prices from Transport</div><div id="priceAlertList" class="price-alert-list"></div></div><div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Price</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
       <div class="pages"><span id="pageText">0 requests</span><button class="secondary hidden" id="undoRequestDelete">Undo deletion</button><button class="secondary" id="refreshRequests">Refresh list</button></div>
     </section>
   </main>
@@ -357,6 +358,12 @@ function refreshPriceAlerts(){
  el("priceAlerts").classList.toggle("hidden",!pending.length);
  const html=pending.map(row=>'<button type="button" data-price-alert="'+row.id+'">#'+row.id+' · '+priceLabel(row)+' € · View request</button>').join("");
  if(el("priceAlertList").innerHTML!==html)el("priceAlertList").innerHTML=html;
+ el("priceNotificationPopup").classList.toggle("hidden",!pending.length);
+ const popup=pending.slice(0,4).map(row=>{
+ const author=requestOwners.find(person=>person.user_id===row.price_entered_by)?.display_name||"Transport";
+ return '<button type="button" data-price-alert="'+row.id+'"><b>Request #'+row.id+' · '+priceLabel(row)+' €</b><small>'+escapeHtml(author)+' gave a price · Open request</small></button>';
+ }).join("")+(pending.length>4?'<small>+'+(pending.length-4)+' more — see New prices above the list</small>':'');
+ if(el("priceNotificationItems").innerHTML!==popup)el("priceNotificationItems").innerHTML=popup;
 }
 function acknowledgePrice(requestId){
  const row=requests.find(r=>String(r.id)===String(requestId));if(!row||!(currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales")))return;
@@ -368,6 +375,7 @@ el("priceAlertList").onclick=event=>{
  const button=event.target.closest("[data-price-alert]");if(!button)return;
  openViewRequest(button.dataset.priceAlert);acknowledgePrice(button.dataset.priceAlert);
 };
+el("priceNotificationItems").onclick=el("priceAlertList").onclick;
 window.addEventListener("storage",event=>{if(currentUser&&event.key==="cargo-price-seen-"+currentUser.id){refreshPriceAlerts();renderRequests()}});
 
 function canDeleteRequest(row){return !!row&&(isAdmin()||row.created_by===currentUser.id)}
