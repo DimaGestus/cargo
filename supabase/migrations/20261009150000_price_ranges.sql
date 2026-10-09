@@ -1,0 +1,1 @@
+alter table public.transport_requests add column price_eur_max numeric; alter table public.transport_requests add constraint transport_requests_price_range_check check(price_eur_max is null or (price_eur is not null and price_eur_max>=price_eur));
