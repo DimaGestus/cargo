@@ -50,15 +50,15 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .action.has-price-comment,.action.has-price-comment:focus,.action.has-price-comment:active{color:#245ef3!important;background:#eaf2ff!important;border-color:#8bb4ff!important}.price-input-row.hidden{display:none}
 
 tbody tr.request-waiting,tbody tr.request-waiting:hover{background:#fff}
-tbody tr.request-received,tbody tr.request-received:hover{background:#f0e6ff}
+tbody tr.request-received,tbody tr.request-received:hover{background:#dcfce7}
 tbody tr.request-sent,tbody tr.request-sent:hover{background:#fff6d6}
 tbody tr.request-accepted,tbody tr.request-accepted:hover{background:#e0f6e7}
 tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
-.status.received{color:#7135b2;background:#e4ceff}
+.status.received{color:#14773b;background:#bbf7d0}
 .status.sent{color:#986000;background:#ffe69a}
 .status.accepted{color:#14773b;background:#c7efd4}
 .status.declined{color:#b42335;background:#ffd0d7}
-.filter-field select.received{color:#7135b2;background:#f0e6ff}
+.filter-field select.received{color:#14773b;background:#dcfce7}
 .filter-field select.accepted{color:#14773b;background:#e0f6e7}
 .edited-label{margin-top:5px;color:#e58a23;font-size:11px;font-weight:500}
 .chat-request-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.chat-request-heading #chatOpenRequest{color:#245ef3;white-space:nowrap;padding:0 0 8px}tbody tr.chat-opened-request{outline:2px solid #3b67ed;outline-offset:-2px}
@@ -71,7 +71,8 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 .customer-document{display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1;filter:saturate(1.6) contrast(1.15);vertical-align:middle;padding:0;background:transparent}
 .route-stop-line{display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:4px;align-items:baseline}.route-stop-line>.route-date{width:34px}.route-stop-line>small{grid-column:2}.route-stop-place{min-width:0}
 .stop-head [data-remove-stop]{color:#ef233c;font-size:17px;font-weight:700}.stop-head [data-duplicate-stop]{color:#5276c4;font-size:17px}
-#viewRequestModal{z-index:45}.request-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.request-detail-stop{padding:14px;background:#f8fafc;border:1px solid var(--line);border-radius:9px;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}.request-detail-stop p{margin:6px 0;color:var(--ink)}.request-detail-summary{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;border-top:1px solid var(--line);padding-top:15px}@media(max-width:650px){.request-detail-grid{grid-template-columns:1fr}}</style>
+#viewRequestModal{z-index:45}.request-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.request-detail-stop{padding:14px;background:#f8fafc;border:1px solid var(--line);border-radius:9px;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}.request-detail-stop p{margin:6px 0;color:var(--ink)}.request-detail-summary{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;border-top:1px solid var(--line);padding-top:15px}@media(max-width:650px){.request-detail-grid{grid-template-columns:1fr}}.price-alerts{margin:0 0 14px;padding:12px;border:1px solid #86dba1;border-radius:9px;background:#effdf4}.price-alerts-title{font-weight:650;font-size:13px;margin-bottom:7px}.price-alert-list{display:flex;gap:7px;flex-wrap:wrap}.price-alert-list button{border:1px solid #86dba1;border-radius:7px;background:white;color:#14773b;padding:7px 10px;font-size:12px}.price-unread-marker{display:block;margin-top:6px;color:#08783e;font-size:11px;font-weight:700;animation:price-pulse 1.4s ease-in-out infinite}tr.price-unread td:first-child{box-shadow:inset 4px 0 #22c55e}@keyframes price-pulse{0%,100%{opacity:1}50%{opacity:.35}}@media(prefers-reduced-motion:reduce){.price-unread-marker{animation:none}}
+</style>
 </head>
 <body>
 <section class="authscreen" id="authScreen">
@@ -119,7 +120,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
     <section class="panel">
       <div class="tabs" id="tabs">
         <button class="tab active" data-status="Waiting for price">Waiting for price</button>
-        <button class="tab" data-status="Price sent">Price sent</button>
+        <button class="tab" data-status="Price received">Price received</button>
         <button class="tab" data-status="Accepted">Accepted</button>
         <button class="tab" data-status="Declined">Declined</button>
         <button class="tab" data-status="All">All</button>
@@ -133,9 +134,9 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
         <label class="filter-field"><span>Delivery Country</span><input id="deliveryCountry" class="filter" maxlength="2" placeholder=""></label>
         <label class="filter-field"><span>Delivery Postcode</span><input id="deliveryPostcode" class="filter" placeholder=""></label>
 <label class="filter-field hidden" id="ownerFilterField"><span>Owner</span><select id="ownerFilter" class="filter"><option value="mine">My requests</option><option value="all" selected>All requests</option></select></label>
-<label class="filter-field hidden" id="statusFilterField"><span>Status</span><select id="statusFilter" class="filter"><option value="">All</option><option>Waiting for price</option><option>Price sent</option><option>Accepted</option><option>Declined</option><option>No price</option></select></label>
+<label class="filter-field hidden" id="statusFilterField"><span>Status</span><select id="statusFilter" class="filter"><option value="">All</option><option>Waiting for price</option><option>Price received</option><option>Price sent</option><option>Accepted</option><option>Declined</option><option>No price</option></select></label>
       </div>
-      <div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Price</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
+      <div id="priceAlerts" class="price-alerts hidden" role="status" aria-live="polite"><div class="price-alerts-title">🔔 New prices for your requests</div><div id="priceAlertList" class="price-alert-list"></div></div><div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Price</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
       <div class="pages"><span id="pageText">0 requests</span><button class="secondary hidden" id="undoRequestDelete">Undo deletion</button><button class="secondary" id="refreshRequests">Refresh list</button></div>
     </section>
   </main>
@@ -196,9 +197,10 @@ let passwordPromptPending=["recovery","invite"].includes(passwordLinkFlow);
 const db=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let inboxMessages=[];
 let requestOwners=[];
-const REQUEST_STATUSES=["Waiting for price","Price sent","Accepted","Declined","No price"];
+const REQUEST_STATUSES=["Waiting for price","Price received","Price sent","Accepted","Declined","No price"];
 let currentCategory="transport",activeDepartment="transport";
 let chatPeople=[],chatPollBusy=false;
+let unreadPrices=new Map(),announcedPrices=new Set();
 let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
 function palletLabel(row){const count=Number(row.pallet_count)>0?row.pallet_count+" pallets":"";const exchange=(row.pallet_exchange||Number(row.pallet_count)===-1)?"Pallets to change":"No change";return [count,exchange].filter(Boolean).join(", ");}
@@ -251,7 +253,7 @@ el("statusFilter").className="filter "+(status?statusClass(status):"");
     const next=activeDepartment==="sales"?'<select class="row-status-select" data-request-status="'+row.id+'" aria-label="Status for request #'+row.id+'"><option value="" selected disabled>Status</option>'+REQUEST_STATUSES.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")+'</select>':"";
     const hasPriceComment=!!String(row.price_comment||"").trim();
     const edit=activeDepartment==="transport"?'<button type="button" class="action icon-action'+(hasPriceComment?' has-price-comment':'')+'" data-comment="'+row.id+'" title="Edit price comment" aria-label="Edit price comment for request #'+row.id+'">✎</button>':(row.created_by===currentUser.id?'<button type="button" class="action icon-action'+(hasPriceComment?' has-price-comment':'')+'" data-edit="'+row.id+'" title="Edit my request" aria-label="Edit request #'+row.id+'">✎</button>':(hasPriceComment?'<span class="action icon-action has-price-comment" role="img" aria-label="Price comment left">✎</span>':""));
-    return '<tr data-request-id="'+row.id+'" class="request-'+statusClass(row.status)+'"><td><div class="reqid">#'+row.id+'</div><div class="owner-label">'+escapeHtml(ownerInitials(owner,row.created_by))+'</div>'+(row.edited_at?'<div class="edited-label" title="Request details edited '+escapeHtml(new Date(row.edited_at).toLocaleString())+'">✏️ edited</div>':"")+'<span class="status owner-status '+statusClass(row.status)+'">'+escapeHtml(row.status)+'</span></td><td class="route">'+route+'</td><td class="cargo"><b>'+cargo+'</b>'+(row.client?'<div class="company"><span class="customer-document">📝</span> '+escapeHtml(row.client)+'</div>':"")+'</td><td class="date">'+createdLabel(row.created_at)+'</td><td class="status-cell">'+(activeDepartment==="transport"?price+(row.price_eur&&row.price_entered_by?'<div class="price-author" title="'+escapeHtml(row.price_entered_name||"Price author")+'">'+escapeHtml(ownerInitials(row.price_entered_name,row.price_entered_by))+'</div>':""):(row.price_eur?'<div class="status-price">'+Number(row.price_eur).toLocaleString("en-US")+' €</div>'+(row.price_entered_by?'<div class="price-author" title="'+escapeHtml(row.price_entered_name||"Price author")+'">'+escapeHtml(ownerInitials(row.price_entered_name,row.price_entered_by))+'</div>':""):""))+'</td><td><div class="actions">'+next+edit+'<button type="button" class="action icon-action" data-chat="'+row.id+'" title="Chat about this cargo" aria-label="Chat about request #'+row.id+'">💬</button><button type="button" class="action icon-action" data-copy="'+row.id+'" title="Copy cargo details" aria-label="Copy request #'+row.id+' details">⧉</button><button type="button" class="action icon-action" data-view-request="'+row.id+'" title="View request" aria-label="View request #'+row.id+'">🔍</button>'+(canDeleteRequest(row)?'<button type="button" class="action icon-action delete-request" data-delete-request="'+row.id+'" title="Delete request" aria-label="Delete request #'+row.id+'"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button>':"")+'<button type="button" class="action icon-action" data-maps="'+row.id+'" title="Google Maps route by country and postcode" aria-label="Google Maps route for request #'+row.id+'">🗺️</button></div>'+priceComment+'</td></tr>';
+    return '<tr data-request-id="'+row.id+'" class="request-'+statusClass(row.status)+(unreadPrices.has(String(row.id))?' price-unread':'')+'"><td><div class="reqid">#'+row.id+'</div><div class="owner-label">'+escapeHtml(ownerInitials(owner,row.created_by))+'</div>'+(row.edited_at?'<div class="edited-label" title="Request details edited '+escapeHtml(new Date(row.edited_at).toLocaleString())+'">✏️ edited</div>':"")+'<span class="status owner-status '+statusClass(row.status)+'">'+escapeHtml(row.status)+'</span>'+(unreadPrices.has(String(row.id))?'<span class="price-unread-marker">🔔 New price</span>':'')+'</td><td class="route">'+route+'</td><td class="cargo"><b>'+cargo+'</b>'+(row.client?'<div class="company"><span class="customer-document">📝</span> '+escapeHtml(row.client)+'</div>':"")+'</td><td class="date">'+createdLabel(row.created_at)+'</td><td class="status-cell">'+(activeDepartment==="transport"?price+(row.price_eur&&row.price_entered_by?'<div class="price-author" title="'+escapeHtml(row.price_entered_name||"Price author")+'">'+escapeHtml(ownerInitials(row.price_entered_name,row.price_entered_by))+'</div>':""):(row.price_eur?'<div class="status-price">'+Number(row.price_eur).toLocaleString("en-US")+' €</div>'+(row.price_entered_by?'<div class="price-author" title="'+escapeHtml(row.price_entered_name||"Price author")+'">'+escapeHtml(ownerInitials(row.price_entered_name,row.price_entered_by))+'</div>':""):""))+'</td><td><div class="actions">'+next+edit+'<button type="button" class="action icon-action" data-chat="'+row.id+'" title="Chat about this cargo" aria-label="Chat about request #'+row.id+'">💬</button><button type="button" class="action icon-action" data-copy="'+row.id+'" title="Copy cargo details" aria-label="Copy request #'+row.id+' details">⧉</button><button type="button" class="action icon-action" data-view-request="'+row.id+'" title="View request" aria-label="View request #'+row.id+'">🔍</button>'+(canDeleteRequest(row)?'<button type="button" class="action icon-action delete-request" data-delete-request="'+row.id+'" title="Delete request" aria-label="Delete request #'+row.id+'"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button>':"")+'<button type="button" class="action icon-action" data-maps="'+row.id+'" title="Google Maps route by country and postcode" aria-label="Google Maps route for request #'+row.id+'">🗺️</button></div>'+priceComment+'</td></tr>';
   }).join("")||'<tr><td colspan="6" class="empty">No requests found. Use “New request” to add one for your team.</td></tr>';
   document.querySelectorAll("[data-status] .count").forEach(node=>{const value=node.parentElement.dataset.status;node.textContent=value==="All"?requests.length:requests.filter(r=>r.status===value).length});
   el("pageText").textContent="Showing "+filtered.length+" of "+requests.length+" requests";
@@ -306,8 +308,35 @@ async function loadRequests(){
   const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).is("deleted_at",null).order("created_at",{ascending:false});
   if(error){toast("Could not load requests: "+error.message);return}
   requests=(data||[]).map(row=>Object.assign({},row,{creator_email:row.created_by===currentUser.id?currentUser.email:"Team"}));
-  renderRequests();
+  refreshPriceAlerts();renderRequests();
 }
+function priceFingerprint(row){return String(row.price_eur)+":"+String(row.price_entered_by||"")}
+function pendingPriceAlerts(rows,userId,seen){
+ return rows.filter(row=>row.created_by===userId&&Number(row.price_eur)>0&&row.price_entered_by!==userId&&seen[String(row.id)]!==priceFingerprint(row));
+}
+function readPriceSeen(){try{return JSON.parse(localStorage.getItem("cargo-price-seen-"+currentUser.id)||"{}")}catch{return {}}}
+function refreshPriceAlerts(){
+ const pending=pendingPriceAlerts(requests,currentUser.id,readPriceSeen());
+ unreadPrices=new Map(pending.map(row=>[String(row.id),row]));
+ const newAlerts=pending.filter(row=>!announcedPrices.has(String(row.id)+":"+priceFingerprint(row)));
+ pending.forEach(row=>announcedPrices.add(String(row.id)+":"+priceFingerprint(row)));
+ if(newAlerts.length)toast("🔔 Price received for request #"+newAlerts.map(row=>row.id).join(", #"));
+ el("priceAlerts").classList.toggle("hidden",!pending.length);
+ const html=pending.map(row=>'<button type="button" data-price-alert="'+row.id+'">#'+row.id+' · '+Number(row.price_eur).toLocaleString("en-US")+' € · View request</button>').join("");
+ if(el("priceAlertList").innerHTML!==html)el("priceAlertList").innerHTML=html;
+}
+function acknowledgePrice(requestId){
+ const row=requests.find(r=>String(r.id)===String(requestId));if(!row||row.created_by!==currentUser.id)return;
+ const seen=readPriceSeen();seen[String(row.id)]=priceFingerprint(row);
+ try{localStorage.setItem("cargo-price-seen-"+currentUser.id,JSON.stringify(seen))}catch{}
+ unreadPrices.delete(String(row.id));refreshPriceAlerts();renderRequests();
+}
+el("priceAlertList").onclick=event=>{
+ const button=event.target.closest("[data-price-alert]");if(!button)return;
+ openViewRequest(button.dataset.priceAlert);acknowledgePrice(button.dataset.priceAlert);
+};
+window.addEventListener("storage",event=>{if(currentUser&&event.key==="cargo-price-seen-"+currentUser.id){refreshPriceAlerts();renderRequests()}});
+
 function canDeleteRequest(row){return !!row&&(isAdmin()||row.created_by===currentUser.id)}
 function isAdmin(){return ["owner","admin"].includes(currentRole)}
 function setDepartment(department){
@@ -724,11 +753,11 @@ const value=selector.value;selector.disabled=true;
 try{
 const {data,error}=await db.from("transport_requests").update({status:value}).eq("id",selector.dataset.requestStatus).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
 if(error||!data)throw new Error(error?.message||"This request could not be updated.");
-await loadRequests();toast("Status updated");
+acknowledgePrice(selector.dataset.requestStatus);await loadRequests();toast("Status updated");
 }catch(error){toast("Could not update status: "+error.message);selector.value="";selector.disabled=false}
 };
 el("rows").onclick=async event=>{
- const view=event.target.closest("[data-view-request]");if(view){openViewRequest(view.dataset.viewRequest);return}
+ const view=event.target.closest("[data-view-request]");if(view){openViewRequest(view.dataset.viewRequest);acknowledgePrice(view.dataset.viewRequest);return}
  const deleteButton=event.target.closest("[data-delete-request]");
  if(deleteButton){const row=requests.find(r=>String(r.id)===deleteButton.dataset.deleteRequest);if(!canDeleteRequest(row))return;pendingDeleteRequest=row.id;el("deleteRequestTitle").textContent="Delete request #"+row.id+"?";showMessage("deleteRequestError","",false);el("deleteRequestModal").classList.add("show");return}
 
@@ -783,7 +812,7 @@ el("priceForm").onsubmit=async event=>{
   if(!priceCommentOnly&&(!Number.isFinite(value)||value<=0)){el("priceValue").reportValidity();return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
   try{
-    const {data,error}=await db.from("transport_requests").update(priceCommentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:value,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(activeRequest))?.price_eur?{status:"Price sent"}:{}),price_entered_by:currentUser.id}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
+    const {data,error}=await db.from("transport_requests").update(priceCommentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:value,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(activeRequest))?.price_eur?{status:"Price received"}:{}),price_entered_by:currentUser.id}).eq("id",activeRequest).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
     const commentSaved=priceCommentOnly;closePricePopover();if(!commentSaved)el("statusFilter").value="";await loadRequests();toast(commentSaved?"Comment saved":"Price saved");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
