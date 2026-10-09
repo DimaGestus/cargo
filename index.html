@@ -175,7 +175,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
   <p>They’ll receive an email invitation and join the shared request list after accepting it.</p>
   <form id="inviteForm"><div class="field"><label for="inviteEmail">Colleague’s email</label><input id="inviteEmail" type="email" required placeholder="name@company.com"></div>
   <div class="field"><label for="inviteCategory">Employee category</label><select id="inviteCategory" required><option value="sales">Sales</option><option value="transport">Transport</option></select></div>
-  <div class="message" id="inviteMessage" aria-live="polite"></div>
+  <div class="message" id="inviteMessage" aria-live="polite"></div><div id="inviteLinkBox" class="hidden"><div class="field"><label for="inviteLink">Personal invitation link</label><input id="inviteLink" type="text" readonly autocomplete="off"></div><button class="secondary" id="copyInviteLink" type="button">Copy invitation link</button></div>
   <div class="modalfoot"><button class="secondary" type="button" data-close="inviteModal">Cancel</button><button class="primary" id="sendInvite" type="submit">Send invitation</button></div></form>
 </div></div>
 <div id="priceModal" class="price-popover" role="dialog" aria-label="Offer a price"><form id="priceForm"><div class="price-input-row"><input id="priceValue" type="number" min="0.01" step="0.01" required placeholder="0.00" aria-label="Transport price (€)"><span aria-hidden="true">€</span></div><textarea id="priceComment" maxlength="2000" placeholder="Comment (optional)" aria-label="Price comment"></textarea><div class="price-error hidden" id="priceError" role="status"></div><div class="price-popover-foot"><button class="secondary" type="button" data-close="priceModal">Cancel</button><button class="primary" id="savePrice" type="submit">Save</button></div></form></div>
@@ -375,13 +375,20 @@ el("bootstrapForm").onsubmit=async event=>{
 };
 el("signOut").onclick=()=>db.auth.signOut();
 el("teamButton").onclick=()=>{el("teamModal").classList.add("show");loadTeamMembers()};
-el("teamInvite").onclick=()=>{showMessage("inviteMessage","",false);el("inviteModal").classList.add("show")};
+el("copyInviteLink").onclick=async()=>{try{await navigator.clipboard.writeText(el("inviteLink").value);toast("Invitation link copied")}catch{el("inviteLink").select();toast("Select and copy the invitation link")}};
+el("teamInvite").onclick=()=>{el("inviteLinkBox").classList.add("hidden");el("inviteLink").value="";showMessage("inviteMessage","",false);el("inviteModal").classList.add("show")};
 el("inviteForm").onsubmit=async event=>{
   event.preventDefault();const email=el("inviteEmail").value.trim().toLowerCase();el("sendInvite").disabled=true;showMessage("inviteMessage","Sending invitation…",false);
   const category=el("inviteCategory").value;
   const {data,error}=await db.functions.invoke("invite-colleague",{body:{email,category}});
   el("sendInvite").disabled=false;
-  if(error||data?.error){showMessage("inviteMessage",data?.error||error.message||"Invitation failed.",true);return}
+  let inviteErrorMessage=data?.error;
+  if(error?.context){try{const details=await error.context.json();inviteErrorMessage=details.error||details.message||inviteErrorMessage}catch{}}
+  if(error||inviteErrorMessage){showMessage("inviteMessage",inviteErrorMessage||error.message||"Invitation failed.",true);return}
+  if(data?.invitation_url){
+    el("inviteLink").value=data.invitation_url;el("inviteLinkBox").classList.remove("hidden");showMessage("inviteMessage",data.message,false);
+    if(el("teamModal").classList.contains("show"))await loadTeamMembers();return;
+  }
   showMessage("inviteMessage",data.message||("Invitation sent to "+email+" as "+(category==="sales"?"Sales":"Transport")+"."),false);el("inviteEmail").value="";setTimeout(()=>el("inviteModal").classList.remove("show"),1300);if(el("teamModal").classList.contains("show"))await loadTeamMembers();
 };
 
