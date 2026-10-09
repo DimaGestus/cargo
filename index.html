@@ -494,7 +494,7 @@ el("teamConfirmAction").onclick=async()=>{
  await loadTeamMembers();await loadRequestOwners();
 };
 
-const COUNTRIES={AT:"Austria",BE:"Belgium",BG:"Bulgaria",CH:"Switzerland",CZ:"Czechia",DE:"Germany",DK:"Denmark",EE:"Estonia",ES:"Spain",FI:"Finland",FR:"France",GB:"United Kingdom",GR:"Greece",HR:"Croatia",HU:"Hungary",IE:"Ireland",IT:"Italy",LT:"Lithuania",LU:"Luxembourg",LV:"Latvia",NL:"Netherlands",NO:"Norway",PL:"Poland",PT:"Portugal",RO:"Romania",SE:"Sweden",SI:"Slovenia",SK:"Slovakia",TR:"Turkey",UA:"Ukraine",RS:"Serbia",BA:"Bosnia and Herzegovina",ME:"Montenegro",MK:"North Macedonia",AL:"Albania",CY:"Cyprus",MT:"Malta",IS:"Iceland",MD:"Moldova"};
+const COUNTRIES={AT:"Austria",BE:"Belgium",BG:"Bulgaria",CH:"Switzerland",CZ:"Czechia",DE:"Germany",DK:"Denmark",EE:"Estonia",ES:"Spain",FI:"Finland",FR:"France",GB:"United Kingdom",GR:"Greece",HR:"Croatia",HU:"Hungary",IE:"Ireland",IT:"Italy",LT:"Lithuania",LU:"Luxembourg",LV:"Latvia",NL:"Netherlands",NO:"Norway",PL:"Poland",PT:"Portugal",RO:"Romania",SE:"Sweden",SI:"Slovenia",SK:"Slovakia",TR:"Turkey",UA:"Ukraine",RS:"Serbia",BA:"Bosnia and Herzegovina",ME:"Montenegro",MK:"North Macedonia",AL:"Albania",CY:"Cyprus",MT:"Malta",IS:"Iceland",MD:"Moldova",UZ:"Uzbekistan"};
 let stopSerial=0,groupWasChanged=false,aiImageData=[],analysisVersion=0;
 function stopCard(kind,stop={}){
  const node=document.createElement("div");node.className="freight-stop";node.dataset.stop=kind;
