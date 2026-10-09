@@ -352,6 +352,7 @@ function readPriceSeen(){try{return JSON.parse(localStorage.getItem("cargo-price
 function refreshPriceAlerts(){
  const pending=pendingPriceAlerts(requests,currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales"),readPriceSeen());
  unreadPrices=new Map(pending.map(row=>[String(row.id),row]));
+ document.title=pending.length?"🔔 ("+pending.length+") New prices — GESTUS":"GESTUS — Team transport requests";
  const newAlerts=pending.filter(row=>!announcedPrices.has(String(row.id)+":"+priceFingerprint(row)));
  pending.forEach(row=>announcedPrices.add(String(row.id)+":"+priceFingerprint(row)));
  if(newAlerts.length)toast("🔔 Price received for request #"+newAlerts.map(row=>row.id).join(", #"));
