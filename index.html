@@ -590,7 +590,7 @@ el("requestForm").onsubmit=async event=>{
  if(activeEditRequest)result=await db.from("transport_requests").update(fields).eq("id",activeEditRequest).eq("workspace_id",WORKSPACE_ID).eq("created_by",currentUser.id).select("id").maybeSingle();
  else result=await db.from("transport_requests").insert({...fields,workspace_id:WORKSPACE_ID,created_by:currentUser.id}).select("id").single();
  if(result.error||!result.data)throw new Error(result.error?.message||"Request could not be saved.");
- const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestModal").classList.remove("show");el("groupFilter").value=fields.transport_group;await loadRequests();toast(wasEditing?"Request updated":"Request created");
+ const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestModal").classList.remove("show");await loadRequests();toast(wasEditing?"Request updated":"Request created");
  }catch(error){showMessage("requestSaveMessage","Could not save request: "+error.message,true)}
  finally{el("saveRequest").disabled=false}
 };
