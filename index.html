@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="cargo-build" content="sales-alerts-20261009">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GESTUS — Team transport requests</title>
 <style>
 :root{--navy:#122b3b;--ink:#1c3040;--muted:#82909b;--line:#e7edf0;--bg:#f5f7f8;--teal:#00a88f;--soft:#e7f7f3;--amber:#f5a623;--red:#dc6b67;--blue:#4387d8}
@@ -137,7 +139,7 @@ td:last-child:has(.actions){min-width:260px}.actions .row-status-select{flex-shr
 <label class="filter-field hidden" id="ownerFilterField"><span>Owner</span><select id="ownerFilter" class="filter"><option value="mine">My requests</option><option value="all" selected>All requests</option></select></label>
 <label class="filter-field hidden" id="statusFilterField"><span>Status</span><select id="statusFilter" class="filter"><option value="">All</option><option>Waiting for price</option><option>Price received</option><option>Price sent</option><option>Accepted</option><option>Declined</option><option>No price</option></select></label>
       </div>
-      <div id="priceAlerts" class="price-alerts hidden" role="status" aria-live="polite"><div class="price-alerts-title">🔔 New prices for your requests</div><div id="priceAlertList" class="price-alert-list"></div></div><div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Price</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
+      <div id="priceAlerts" class="price-alerts hidden" role="status" aria-live="polite"><div class="price-alerts-title">🔔 New prices from Transport</div><div id="priceAlertList" class="price-alert-list"></div></div><div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Price</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
       <div class="pages"><span id="pageText">0 requests</span><button class="secondary hidden" id="undoRequestDelete">Undo deletion</button><button class="secondary" id="refreshRequests">Refresh list</button></div>
     </section>
   </main>
@@ -268,6 +270,7 @@ function restoreRequestView(){
 }
 
 function renderRequests(){
+  if(currentUser&&requestViewReady)refreshPriceAlerts();
   saveRequestView();
   const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
   const group=el("groupFilter").value,ownerFilter=activeDepartment==="sales"?el("ownerFilter").value:"all";
@@ -341,12 +344,12 @@ async function loadRequests(){
   refreshPriceAlerts();renderRequests();
 }
 function priceFingerprint(row){return String(row.price_eur)+":"+String(row.price_eur_max||"")+":"+String(row.price_entered_by||"")}
-function pendingPriceAlerts(rows,userId,seen){
- return rows.filter(row=>row.created_by===userId&&Number(row.price_eur)>0&&row.price_entered_by!==userId&&seen[String(row.id)]!==priceFingerprint(row));
+function pendingPriceAlerts(rows,isSales,seen){
+ return isSales?rows.filter(row=>Number(row.price_eur)>0&&seen[String(row.id)]!==priceFingerprint(row)):[];
 }
 function readPriceSeen(){try{return JSON.parse(localStorage.getItem("cargo-price-seen-"+currentUser.id)||"{}")}catch{return {}}}
 function refreshPriceAlerts(){
- const pending=pendingPriceAlerts(requests,currentUser.id,readPriceSeen());
+ const pending=pendingPriceAlerts(requests,currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales"),readPriceSeen());
  unreadPrices=new Map(pending.map(row=>[String(row.id),row]));
  const newAlerts=pending.filter(row=>!announcedPrices.has(String(row.id)+":"+priceFingerprint(row)));
  pending.forEach(row=>announcedPrices.add(String(row.id)+":"+priceFingerprint(row)));
@@ -356,7 +359,7 @@ function refreshPriceAlerts(){
  if(el("priceAlertList").innerHTML!==html)el("priceAlertList").innerHTML=html;
 }
 function acknowledgePrice(requestId){
- const row=requests.find(r=>String(r.id)===String(requestId));if(!row||row.created_by!==currentUser.id)return;
+ const row=requests.find(r=>String(r.id)===String(requestId));if(!row||!(currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales")))return;
  const seen=readPriceSeen();seen[String(row.id)]=priceFingerprint(row);
  try{localStorage.setItem("cargo-price-seen-"+currentUser.id,JSON.stringify(seen))}catch{}
  unreadPrices.delete(String(row.id));refreshPriceAlerts();renderRequests();
@@ -399,6 +402,7 @@ async function enterApp(user){
   }
   currentRole=membership.role;
   currentCategory=membership.employee_category||"transport";
+  if(![...el("groupFilter").options].some(option=>option.value==="all"))el("groupFilter").insertAdjacentHTML("afterbegin",'<option value="all">All requests</option>');
   setDepartment(isAdmin()?activeDepartment:currentCategory);
   el("chatLauncher").classList.remove("hidden");
   el("userEmail").textContent=user.email||"";
