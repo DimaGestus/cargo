@@ -268,6 +268,11 @@ function rowStops(row,kind){
 const stops=row[kind+"_stops"];
 return stops?.length?stops:[kind==="loading"?{country:row.loading_country,postcode:row.loading_postcode,location:row.loading_city,date:row.pickup_date}:{country:row.delivery_country,postcode:row.delivery_postcode,location:row.delivery_city,date:row.delivery_date}];
 }
+function normalizeRouteCode(value){return String(value??"").toUpperCase().replace(/[\s-]+/g,"")}
+function matchesRouteFilter(row,kind,country,postcode){
+ const countryCode=normalizeRouteCode(country),postalCode=normalizeRouteCode(postcode);
+ return rowStops(row,kind).some(stop=>(!countryCode||normalizeRouteCode(stop.country).startsWith(countryCode))&&(!postalCode||normalizeRouteCode(stop.postcode).startsWith(postalCode)));
+}
 function renderRouteStops(row){
 const render=stop=>'<div class="route-stop-line"><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong><span class="route-stop-place"><strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(routeCity(stop))+'</span><small>'+escapeHtml([stop.time_from?(stop.fixed_time?"Fixed: ":"")+stop.time_from+(stop.time_to&&!stop.fixed_time?"–"+stop.time_to:""):"",stop.comment?"💬 "+stop.comment:""].filter(Boolean).join(" · "))+'</small></div>';
 return '<div class="route-stops"><div>'+rowStops(row,"loading").map(render).join("")+'</div><span class="arrow">→</span><div>'+rowStops(row,"delivery").map(render).join("")+'</div></div>'+(row.note?'<small>'+escapeHtml(row.note)+'</small>':"");
@@ -313,10 +318,10 @@ function renderRequests(){
   // the user chooses a status (the change handler disables it) or leaves it.
   if(isRequestStatusFocused()){requestRenderPending=true;return}
   requestRenderPending=false;
-  const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
+  const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase(),loadPostcode=el("loadPostcode").value,deliveryPostcode=el("deliveryPostcode").value;
   const group=el("groupFilter").value,ownerFilter=activeDepartment==="sales"?el("ownerFilter").value:"all";
 el("statusFilter").className="filter "+(status?statusClass(status):"");
-  const filtered=requests.filter(row=>exactRequestSearch!==null?String(row.id)===exactRequestSearch:(group==="all"||requestGroup(row)===group)&&(ownerFilter==="all"||(ownerFilter==="mine"?row.created_by===currentUser.id:row.created_by===ownerFilter))&&(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&(!load||row.loading_country.startsWith(load))&&(!delivery||row.delivery_country.startsWith(delivery)));
+  const filtered=requests.filter(row=>exactRequestSearch!==null?String(row.id)===exactRequestSearch:(group==="all"||requestGroup(row)===group)&&(ownerFilter==="all"||(ownerFilter==="mine"?row.created_by===currentUser.id:row.created_by===ownerFilter))&&(!status||row.status===status)&&(!query||[row.id,row.loading_city,row.delivery_city,row.client,row.loading_postcode,row.delivery_postcode].join(" ").toLowerCase().includes(query))&&matchesRouteFilter(row,"loading",load,loadPostcode)&&matchesRouteFilter(row,"delivery",delivery,deliveryPostcode));
   el("rows").innerHTML=filtered.map(row=>{
     const owner=requestOwners.find(item=>item.user_id===row.created_by)?.display_name||(row.created_by===currentUser.id?(currentUser.email||"You").split("@")[0]:"Team member");
     const cargo=[row.cargo_type,row.temperature,row.weight_kg?Number(row.weight_kg).toLocaleString("en-US")+" kg":"",palletLabel(row)].filter(Boolean).map(escapeHtml).join(" • ");
@@ -956,7 +961,7 @@ el("refreshRequests").onclick=loadRequests;
 el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
 el("groupFilter").addEventListener("change",()=>{if(el("groupFilter").value==="all")el("ownerFilter").value="all";renderRequests()});
 el("ownerFilter").addEventListener("change",renderRequests);
-["query","statusFilter","loadCountry","deliveryCountry"].forEach(id=>el(id).addEventListener("input",()=>{exactRequestSearch=null;renderRequests()}));
+["query","statusFilter","loadCountry","deliveryCountry","loadPostcode","deliveryPostcode"].forEach(id=>el(id).addEventListener("input",()=>{exactRequestSearch=null;renderRequests()}));
 el("query").addEventListener("keydown",event=>{
  if(event.key!=="Enter")return;
  event.preventDefault();
