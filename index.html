@@ -76,6 +76,7 @@ tbody tr.request-declined,tbody tr.request-declined:hover{background:#ffe5e8}
 #viewRequestModal{z-index:45}.request-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.request-detail-stop{padding:14px;background:#f8fafc;border:1px solid var(--line);border-radius:9px;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}.request-detail-stop p{margin:6px 0;color:var(--ink)}.request-detail-summary{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;border-top:1px solid var(--line);padding-top:15px}@media(max-width:650px){.request-detail-grid{grid-template-columns:1fr}}.price-alerts{margin:0 0 14px;padding:12px;border:1px solid #86dba1;border-radius:9px;background:#effdf4}.price-alerts-title{font-weight:650;font-size:13px;margin-bottom:7px}.price-alert-list{display:flex;gap:7px;flex-wrap:wrap}.price-alert-list button{border:1px solid #86dba1;border-radius:7px;background:white;color:#14773b;padding:7px 10px;font-size:12px}.price-unread-marker{display:block;margin-top:6px;color:#08783e;font-size:11px;font-weight:700;animation:price-pulse 1.4s ease-in-out infinite}tr.price-unread td:first-child{box-shadow:inset 4px 0 #22c55e}@keyframes price-pulse{0%,100%{opacity:1}50%{opacity:.35}}@media(prefers-reduced-motion:reduce){.price-unread-marker{animation:none}}
 td:last-child:has(.actions){min-width:260px}.actions .row-status-select{flex-shrink:0}
 .price-notification-popup{position:fixed;right:22px;bottom:86px;z-index:25;width:min(330px,calc(100vw - 28px));max-height:40vh;overflow:auto;background:white;border:1px solid #86dba1;border-radius:12px;padding:12px;box-shadow:0 6px 24px #17332a26}.price-notification-popup strong{display:block;font-size:13px;margin-bottom:8px}.price-notification-popup button{display:block;text-align:left;width:100%;padding:9px;margin-top:6px;border:1px solid #bbf7d0;border-radius:7px;background:#f0fdf4;color:#146c3a;font-size:12px}.price-notification-popup small{display:block;margin-top:4px;color:#50735e}
+.chat-unread-badge{position:absolute;right:-6px;top:-7px;min-width:24px;height:24px;padding:0 6px;display:grid;place-items:center;border-radius:14px;background:#dc2626;color:white;border:2px solid white;font-size:12px;font-weight:750;box-shadow:0 2px 7px #dc262650}.chat-conversation-unread{display:inline-block;margin-left:7px;padding:2px 6px;border-radius:10px;background:#dc2626;color:white;font-size:11px;font-weight:700}
 </style>
 </head>
 <body>
@@ -184,7 +185,7 @@ td:last-child:has(.actions){min-width:260px}.actions .row-status-select{flex-shr
   <div class="modalfoot"><button class="secondary" type="button" data-close="inviteModal">Cancel</button><button class="primary" id="sendInvite" type="submit">Send invitation</button></div></form>
 </div></div>
 <div id="priceModal" class="price-popover" role="dialog" aria-label="Offer a price"><form id="priceForm"><div class="price-input-row"><input id="priceValue" type="text" inputmode="decimal" required placeholder="1200 or 1200-1250" aria-label="Transport price (€)"><span aria-hidden="true">€</span></div><textarea id="priceComment" maxlength="2000" placeholder="Comment (optional)" aria-label="Price comment"></textarea><div class="price-error hidden" id="priceError" role="status"></div><div class="price-popover-foot"><button class="secondary" type="button" data-close="priceModal">Cancel</button><button class="primary" id="savePrice" type="submit">Save</button></div></form></div>
-<button type="button" class="chat-launcher hidden" id="chatLauncher" aria-controls="chatModal" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v14H8l-4 4V4Z"/></svg>Chat</button>
+<button type="button" class="chat-launcher hidden" id="chatLauncher" aria-controls="chatModal" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v14H8l-4 4V4Z"/></svg>Chat<span id="chatUnreadBadge" class="chat-unread-badge hidden" aria-live="polite" role="status"></span></button>
 <div class="modal" id="chatModal" role="dialog" aria-label="Cargo messages"><div class="modalbox wide"><div class="chat-panel-head"><h2>Messages</h2><button class="close" type="button" data-close="chatModal" aria-label="Close chat">×</button></div><div class="chat-layout" id="chatLayout"><div class="chat-inbox" id="chatInbox"></div><div class="chat-detail"><button type="button" class="linkbtn chat-back" id="chatBack" style="display:none;text-align:left;margin-bottom:10px">← Conversations</button><div class="chat-placeholder" id="chatPlaceholder">Select a conversation</div><div class="chat-request-heading"><h3 id="chatTitle" class="hidden">Cargo chat</h3><button type="button" class="linkbtn hidden" id="chatOpenRequest">↗ Open</button></div><p id="chatSubtitle" class="hidden"></p><select id="chatThread" class="filter hidden" aria-label="Choose a colleague conversation"></select><div id="chatParticipants" class="hidden" style="font-size:12px;color:#718096;margin-bottom:10px"></div><div id="chatAddControls" class="hidden" style="display:flex;gap:6px;margin-bottom:10px"><button type="button" class="secondary" id="chatAddToggle" aria-label="Add Transport colleagues" aria-expanded="false" title="Add colleagues to this chat">＋</button><div id="chatAddPicker" class="hidden" style="flex:1;border:1px solid #dce3ef;border-radius:8px;padding:10px"><div id="chatAddChoices" style="display:grid;gap:7px;margin-bottom:10px"></div><button type="button" class="secondary" id="chatAddButton">Add selected</button></div></div><div class="chat-messages hidden" id="chatMessages" aria-live="polite"></div><div class="chat-status hidden" id="chatStatus" aria-live="polite"></div><form class="chat-form hidden" id="chatForm"><textarea id="chatInput" maxlength="2000" required aria-label="Message" placeholder="Write a message about this cargo…"></textarea><button class="primary" id="sendChatMessage" type="submit">Send</button></form></div></div></div></div>
 <div class="toast" id="toast">Done</div>
 <script type="module">
@@ -200,6 +201,33 @@ const authLinkError=new URLSearchParams(location.hash.slice(1)).get("error_descr
 let passwordPromptPending=["recovery","invite"].includes(passwordLinkFlow);
 const db=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let inboxMessages=[];
+function readChatSeen(){
+ try{const value=JSON.parse(localStorage.getItem("cargo-chat-seen-"+currentUser.id)||"{}");return value&&typeof value==="object"?value:{}}catch{return {}}
+}
+function unreadChatMessages(messages,userId,seen,rows){
+ const activeIds=new Set(rows.map(row=>String(row.id)));
+ return messages.filter(message=>message.sender_id!==userId&&!seen[String(message.id)]&&activeIds.has(String(message.request_id)));
+}
+function updateChatUnread(){
+ const unread=currentUser?unreadChatMessages(inboxMessages,currentUser.id,readChatSeen(),requests):[];
+ const badge=el("chatUnreadBadge"),count=unread.length;
+ badge.textContent=count>99?"99+":String(count);
+ badge.classList.toggle("hidden",!count);
+ el("chatLauncher").setAttribute("aria-label",count?"Chat, "+count+" unread messages":"Chat");
+ el("chatLauncher").title=count?count+" unread messages":"Chat";
+ document.querySelectorAll("[data-chat-unread-request]").forEach(node=>{
+ const total=unread.filter(message=>String(message.request_id)===node.dataset.chatUnreadRequest).length;
+ node.textContent=String(total);node.classList.toggle("hidden",!total);
+ });
+}
+function markChatMessagesRead(items){
+ if(!currentUser||document.hidden||!el("chatModal").classList.contains("show")||!el("chatLayout").classList.contains("has-conversation"))return;
+ const seen=readChatSeen();
+ items.filter(item=>item.sender_id!==currentUser.id).forEach(item=>seen[String(item.id)]=true);
+ try{localStorage.setItem("cargo-chat-seen-"+currentUser.id,JSON.stringify(seen))}catch{}
+ updateChatUnread();
+}
+window.addEventListener("storage",event=>{if(currentUser&&event.key==="cargo-chat-seen-"+currentUser.id)updateChatUnread()});
 let requestOwners=[];
 const REQUEST_STATUSES=["Waiting for price","Price received","Price sent","Accepted","Declined","No price"];
 let currentCategory="transport",activeDepartment="transport";
@@ -445,6 +473,7 @@ async function enterApp(user){
   restoreRequestView();
   await loadRequests();
   startRequestUpdates();
+  await loadChatInbox();
   if(passwordPromptPending||user.user_metadata?.password_setup_required)openPasswordForm();
 }
 document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>{if(button.dataset.close==="chatModal")closeChat();else el(button.dataset.close).classList.remove("show")}));
@@ -702,14 +731,18 @@ function showChatDetail(show){
   if(!show){el("chatThread").classList.add("hidden");el("chatParticipants").classList.add("hidden");el("chatAddControls").classList.add("hidden");}
 }
 async function loadChatInbox(){
+  if(!currentUser)return;
+  const userId=currentUser.id;
   el("chatInbox").innerHTML='<div class="chat-inbox-status">Loading conversations…</div>';
-  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("workspace_id",WORKSPACE_ID).order("created_at",{ascending:false});
+  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,chat_peer_id,message,created_at").eq("workspace_id",WORKSPACE_ID).order("created_at",{ascending:false});
+  if(currentUser?.id!==userId)return;
   if(error){el("chatInbox").innerHTML='<div class="chat-inbox-status">'+escapeHtml("Could not load conversations: "+error.message)+'</div>';return}
   inboxMessages=data||[];
   const latest=new Map(),started=new Map();inboxMessages.forEach(message=>{const id=String(message.request_id);if(!latest.has(id))latest.set(id,message);started.set(id,message.created_at)});
   const rows=[...latest].map(([id,message])=>({row:requests.find(r=>String(r.id)===id),message})).filter(item=>item.row);
   if(currentChatRequest&&!latest.has(String(currentChatRequest.id)))rows.unshift({row:currentChatRequest,message:null});
-  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong> <span class="chat-owner-initials">'+escapeHtml(ownerInitials(requestOwners.find(owner=>owner.user_id===row.created_by)?.display_name||row.creator_email,row.created_by))+'</span><small title="Conversation started">'+escapeHtml(message?new Date(started.get(String(row.id))).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}):"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
+  el("chatInbox").innerHTML=rows.map(({row,message})=>'<button type="button" class="chat-conversation '+(currentChatRequest&&String(currentChatRequest.id)===String(row.id)?'active':'')+'" data-inbox-request="'+row.id+'"><strong>#'+escapeHtml(row.id)+'</strong><span class="chat-conversation-unread hidden" data-chat-unread-request="'+row.id+'"></span> <span class="chat-owner-initials">'+escapeHtml(ownerInitials(requestOwners.find(owner=>owner.user_id===row.created_by)?.display_name||row.creator_email,row.created_by))+'</span><small title="Conversation started">'+escapeHtml(message?new Date(started.get(String(row.id))).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}):"")+'</small><div class="chat-route">'+escapeHtml(row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode)+'</div><p class="chat-preview">'+escapeHtml(message?(message.sender_id===currentUser.id?"You: ":"")+message.message:"Start a conversation")+'</p></button>').join("")||'<div class="chat-inbox-status">No conversations yet. Use 💬 on a cargo request to start one.</div>';
+  updateChatUnread();
 }
 el("chatLauncher").onclick=async()=>{
   if(el("chatModal").classList.contains("show")){await closeChat();return}
@@ -725,7 +758,7 @@ el("chatOpenRequest").onclick=async()=>{
  const target=document.querySelector('[data-request-id="'+row.id+'"]');
  if(target){target.classList.add("chat-opened-request");target.scrollIntoView({behavior:"smooth",block:"center"});}
 };
-setInterval(async()=>{if(chatPollBusy||document.hidden||!el("chatModal").classList.contains("show"))return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},3000);
+setInterval(async()=>{if(chatPollBusy||document.hidden||!currentUser)return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest&&el("chatModal").classList.contains("show")){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},3000);
 el("chatBack").onclick=()=>{showChatDetail(false)};
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&el("chatModal").classList.contains("show"))closeChat()});
 
@@ -788,12 +821,15 @@ el("chatAddButton").onclick=async()=>{
  finally{button.disabled=false;await loadChatParticipants()}
 };
 async function loadChatMessages(){
-  if(!currentChatRequest)return;
+  if(!currentChatRequest||!currentUser)return;
+  const userId=currentUser.id,requestId=currentChatRequest.id,peerId=currentChatPeer;
   if(!currentChatPeer){renderChatMessages([]);return}
   const filter="and(sender_id.eq."+currentUser.id+",recipient_id.eq."+currentChatPeer+"),and(sender_id.eq."+currentChatPeer+",recipient_id.eq."+currentUser.id+")";
   const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("request_id",currentChatRequest.id).eq("chat_peer_id",currentChatPeer).order("created_at",{ascending:true}).order("id",{ascending:true});
   if(error){el("chatStatus").textContent="Could not load messages: "+error.message;return}
+  if(currentUser?.id!==userId||currentChatRequest?.id!==requestId||currentChatPeer!==peerId)return;
   renderChatMessages(data||[]);
+  markChatMessagesRead(data||[]);
 }
 async function openChat(requestId){
   const row=requests.find(item=>String(item.id)===String(requestId));if(!row)return;
@@ -928,7 +964,7 @@ el("query").addEventListener("keydown",event=>{
  exactRequestSearch=/^\d+$/.test(value)?String(Number(value)):null;
  renderRequests();
 });
-db.auth.onAuthStateChange((_event,session)=>{if(_event==="PASSWORD_RECOVERY")passwordPromptPending=true;setTimeout(()=>{if(session?.user)enterApp(session.user);else{stopRequestUpdates();closeChat();el("chatLauncher").classList.add("hidden");currentUser=null;currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
+db.auth.onAuthStateChange((_event,session)=>{if(_event==="PASSWORD_RECOVERY")passwordPromptPending=true;setTimeout(()=>{if(session?.user)enterApp(session.user);else{stopRequestUpdates();closeChat();el("chatLauncher").classList.add("hidden");inboxMessages=[];currentUser=null;updateChatUnread();currentRole="";requests=[];el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden")}},0)});
 if(invitationToken&&["invite","recovery"].includes(passwordLinkFlow)){
   showMessage("loginMessage","Opening your personal invitation…",false);
   const {error}=await db.auth.verifyOtp({token_hash:invitationToken,type:passwordLinkFlow});
