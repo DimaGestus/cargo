@@ -270,9 +270,21 @@ function restoreRequestView(){
  requestViewReady=true;
 }
 
+let requestRenderPending=false;
+function isRequestStatusFocused(){
+ const focused=document.activeElement;
+ return !!focused&&el("rows").contains(focused)&&focused.matches("[data-request-status]")&&!focused.disabled;
+}
+el("rows").addEventListener("focusout",()=>{
+ setTimeout(()=>{if(requestRenderPending&&!isRequestStatusFocused())renderRequests()},0);
+});
 function renderRequests(){
   if(currentUser&&requestViewReady)refreshPriceAlerts();
   saveRequestView();
+  // Replacing the rows destroys a native select's open menu. Keep it until
+  // the user chooses a status (the change handler disables it) or leaves it.
+  if(isRequestStatusFocused()){requestRenderPending=true;return}
+  requestRenderPending=false;
   const query=el("query").value.trim().toLowerCase(),status=el("statusFilter").value,load=el("loadCountry").value.trim().toUpperCase(),delivery=el("deliveryCountry").value.trim().toUpperCase();
   const group=el("groupFilter").value,ownerFilter=activeDepartment==="sales"?el("ownerFilter").value:"all";
 el("statusFilter").className="filter "+(status?statusClass(status):"");
