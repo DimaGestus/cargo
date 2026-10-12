@@ -345,8 +345,8 @@ async function loadRequests(){
   refreshPriceAlerts();renderRequests();
 }
 function priceFingerprint(row){return String(row.price_eur)+":"+String(row.price_eur_max||"")+":"+String(row.price_entered_by||"")}
-function pendingPriceAlerts(rows,isSales,seen){
- return isSales?rows.filter(row=>Number(row.price_eur)>0&&seen[String(row.id)]!==priceFingerprint(row)):[];
+function pendingPriceAlerts(rows,isSales,seen,userId){
+ return isSales&&userId?rows.filter(row=>row.created_by===userId&&Number(row.price_eur)>0&&seen[String(row.id)]!==priceFingerprint(row)):[];
 }
 function readPriceSeen(){try{return JSON.parse(localStorage.getItem("cargo-price-seen-"+currentUser.id)||"{}")}catch{return {}}}
 const originalTabIcon=document.querySelector('link[rel="icon"]')?.href||"";
@@ -361,7 +361,7 @@ function updatePriceTabBadge(count){
 }
 
 function refreshPriceAlerts(){
- const pending=pendingPriceAlerts(requests,currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales"),readPriceSeen());
+ const pending=pendingPriceAlerts(requests,currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales"),readPriceSeen(),currentUser?.id);
  unreadPrices=new Map(pending.map(row=>[String(row.id),row]));
  updatePriceTabBadge(pending.length);
  el("priceAlerts").dataset.updatedAt=String(Date.now());
@@ -379,7 +379,7 @@ function refreshPriceAlerts(){
  if(el("priceNotificationItems").innerHTML!==popup)el("priceNotificationItems").innerHTML=popup;
 }
 function acknowledgePrice(requestId){
- const row=requests.find(r=>String(r.id)===String(requestId));if(!row||!(currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales")))return;
+ const row=requests.find(r=>String(r.id)===String(requestId));if(!row||row.created_by!==currentUser?.id||!(currentCategory==="sales"||(isAdmin()&&activeDepartment==="sales")))return;
  const seen=readPriceSeen();seen[String(row.id)]=priceFingerprint(row);
  try{localStorage.setItem("cargo-price-seen-"+currentUser.id,JSON.stringify(seen))}catch{}
  unreadPrices.delete(String(row.id));refreshPriceAlerts();renderRequests();
