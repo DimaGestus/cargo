@@ -142,7 +142,7 @@ td:last-child:has(.actions){min-width:260px}.actions .row-status-select{flex-shr
 <label class="filter-field hidden" id="statusFilterField"><span>Status</span><select id="statusFilter" class="filter"><option value="">All</option><option>Waiting for price</option><option>Price received</option><option>Price sent</option><option>Accepted</option><option>Declined</option><option>No price</option></select></label>
       </div>
       <aside id="priceNotificationPopup" class="price-notification-popup hidden" aria-label="New price notifications" role="status" aria-live="polite"><strong>🔔 New prices received</strong><div id="priceNotificationItems"></div></aside><div id="priceAlerts" class="price-alerts hidden" role="status" aria-live="polite"><div class="price-alerts-title">🔔 New prices from Transport</div><div id="priceAlertList" class="price-alert-list"></div></div><div class="tablewrap"><table><thead><tr><th>Request</th><th>Route & date</th><th>Cargo</th><th>Created</th><th>Price</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading requests…</td></tr></tbody></table></div>
-      <div class="pages"><span id="pageText">0 requests</span><button class="secondary hidden" id="undoRequestDelete">Undo deletion</button><button class="secondary" id="refreshRequests">Refresh list</button></div>
+      <div class="pages"><span id="pageText">0 requests</span><button class="secondary hidden" id="undoRequestDelete">Undo deletion</button><button type="button" class="secondary" id="showAllRequests">Show all requests</button> <button class="secondary" id="refreshRequests">Refresh list</button></div>
     </section>
   </main>
 </div>
@@ -290,16 +290,14 @@ function saveRequestView(){
  const filters=Object.fromEntries(requestViewFields.map(id=>[id,el(id).value]));
  try{localStorage.setItem("cargo-request-view-"+currentUser.id,JSON.stringify({department:activeDepartment,filters}))}catch{}
 }
+function clearRequestFilters(){
+ exactRequestSearch=null;
+ requestViewFields.forEach(id=>el(id).value=id==="groupFilter"||id==="ownerFilter"?"all":"");
+}
 function restoreRequestView(){
  let saved;try{saved=JSON.parse(localStorage.getItem("cargo-request-view-"+currentUser.id)||"null")}catch{}
- if(saved){
- if(isAdmin()&&["sales","transport"].includes(saved.department))setDepartment(saved.department);
- for(const id of requestViewFields){
- const value=saved.filters?.[id],node=el(id);if(typeof value!=="string")continue;
- if(node.tagName==="SELECT"&&![...node.options].some(option=>option.value===value))continue;
- node.value=value;
- }
- }
+ if(isAdmin()&&["sales","transport"].includes(saved?.department))setDepartment(saved.department);
+ clearRequestFilters();
  requestViewReady=true;
 }
 
@@ -344,7 +342,7 @@ if(error){toast("Could not load request owners: "+error.message);return}
 requestOwners=data||[];
 const selected=el("ownerFilter").value;
 el("ownerFilter").innerHTML='<option value="mine">My requests</option><option value="all">All requests</option>'+requestOwners.map(owner=>'<option value="'+escapeHtml(owner.user_id)+'">'+escapeHtml(owner.display_name)+'</option>').join("");
-el("ownerFilter").value=[...el("ownerFilter").options].some(option=>option.value===selected)?selected:"mine";
+el("ownerFilter").value=[...el("ownerFilter").options].some(option=>option.value===selected)?selected:"all";
 }
 
 let requestsChannel=null,requestsRefreshTimer=null,requestsPollTimer=null,requestsRefreshing=false,requestsRefreshPending=false;
@@ -446,7 +444,7 @@ el("aiRequest").classList.toggle("hidden",department!=="sales");el("manualReques
 el("ownerFilterField").classList.toggle("hidden",department!=="sales");
 el("statusFilterField").classList.toggle("hidden",department!=="sales");
 el("tabs").classList.toggle("hidden",department==="sales");
-if(changed){el("statusFilter").value="";if(department==="sales")el("ownerFilter").value=el("groupFilter").value==="all"?"all":"mine"}
+if(changed)clearRequestFilters();
   document.querySelectorAll("[data-department]").forEach(button=>{
     button.classList.toggle("hidden",!isAdmin()&&button.dataset.department!==currentCategory);
     button.classList.toggle("active",button.dataset.department===department);
@@ -957,8 +955,9 @@ el("undoRequestDelete").onclick=async()=>{
  lastDeletedRequest=null;el("undoRequestDelete").classList.add("hidden");await loadRequests();toast("Request restored");
 };
 
+el("showAllRequests").onclick=()=>{clearRequestFilters();renderRequests()};
 el("refreshRequests").onclick=loadRequests;
-el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
+el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){if(button.dataset.status==="All")clearRequestFilters();else el("statusFilter").value=button.dataset.status;renderRequests()}};
 el("groupFilter").addEventListener("change",()=>{if(el("groupFilter").value==="all")el("ownerFilter").value="all";renderRequests()});
 el("ownerFilter").addEventListener("change",renderRequests);
 ["query","statusFilter","loadCountry","deliveryCountry","loadPostcode","deliveryPostcode"].forEach(id=>el(id).addEventListener("input",()=>{exactRequestSearch=null;renderRequests()}));
