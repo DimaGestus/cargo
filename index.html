@@ -298,6 +298,12 @@ function restoreRequestView(){
  let saved;try{saved=JSON.parse(localStorage.getItem("cargo-request-view-"+currentUser.id)||"null")}catch{}
  if(isAdmin()&&["sales","transport"].includes(saved?.department))setDepartment(saved.department);
  clearRequestFilters();
+ for(const id of requestViewFields){
+ const value=saved?.filters?.[id],node=el(id);
+ if(typeof value!=="string")continue;
+ if(node.tagName==="SELECT"&&![...node.options].some(option=>option.value===value))continue;
+ node.value=value;
+ }
  requestViewReady=true;
 }
 
@@ -455,6 +461,8 @@ if(changed)clearRequestFilters();
 }
 el("departmentNav").onclick=event=>{const button=event.target.closest("[data-department]");if(button){closePricePopover();setDepartment(button.dataset.department)}};
 async function enterApp(user){
+  // Session refreshes must not reinitialize the active list and its filters.
+  if(currentUser?.id===user.id&&requestViewReady)return;
   requestViewReady=false;
   currentUser=user;
   const {data:membership,error}=await db.from("workspace_members").select("role,employee_category").eq("workspace_id",WORKSPACE_ID).eq("user_id",user.id).maybeSingle();
