@@ -381,7 +381,7 @@ function startRequestUpdates(){
    el("rows").dataset.liveUpdates=status;
    if(status==="SUBSCRIBED")scheduleRequestRefresh();
  });
- requestsPollTimer=setInterval(scheduleRequestRefresh,3000);
+ requestsPollTimer=setInterval(scheduleRequestRefresh,8000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRequestRefresh()});
 window.addEventListener("online",scheduleRequestRefresh);
@@ -770,7 +770,7 @@ el("chatOpenRequest").onclick=async()=>{
  const target=document.querySelector('[data-request-id="'+row.id+'"]');
  if(target){target.classList.add("chat-opened-request");target.scrollIntoView({behavior:"smooth",block:"center"});}
 };
-setInterval(async()=>{if(chatPollBusy||document.hidden||!currentUser)return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest&&el("chatModal").classList.contains("show")){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},3000);
+setInterval(async()=>{if(chatPollBusy||document.hidden||!currentUser)return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest&&el("chatModal").classList.contains("show")){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},8000);
 el("chatBack").onclick=()=>{showChatDetail(false)};
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&el("chatModal").classList.contains("show"))closeChat()});
 
