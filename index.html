@@ -461,7 +461,17 @@ if(changed)clearRequestFilters();
   renderRequests();
 }
 el("departmentNav").onclick=event=>{const button=event.target.closest("[data-department]");if(button){closePricePopover();setDepartment(button.dataset.department)}};
+let appEntryPromise=null,appEntryUserId=null;
 async function enterApp(user){
+ if(currentUser?.id===user.id&&requestViewReady)return;
+ if(appEntryPromise&&appEntryUserId===user.id)return appEntryPromise;
+ appEntryUserId=user.id;
+ const pending=initializeApp(user);
+ appEntryPromise=pending;
+ try{return await pending}
+ finally{if(appEntryPromise===pending){appEntryPromise=null;appEntryUserId=null}}
+}
+async function initializeApp(user){
   // Session refreshes must not reinitialize the active list and its filters.
   if(currentUser?.id===user.id&&requestViewReady)return;
   requestViewReady=false;
@@ -966,7 +976,7 @@ el("undoRequestDelete").onclick=async()=>{
 
 el("showAllRequests").onclick=()=>{clearRequestFilters();renderRequests()};
 el("refreshRequests").onclick=loadRequests;
-el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){if(button.dataset.status==="All")clearRequestFilters();else el("statusFilter").value=button.dataset.status;renderRequests()}};
+el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
 el("groupFilter").addEventListener("change",()=>{if(el("groupFilter").value==="all")el("ownerFilter").value="all";renderRequests()});
 el("ownerFilter").addEventListener("change",renderRequests);
 ["query","statusFilter","loadCountry","deliveryCountry","loadPostcode","deliveryPostcode"].forEach(id=>el(id).addEventListener("input",()=>{exactRequestSearch=null;renderRequests()}));
