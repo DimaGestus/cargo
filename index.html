@@ -290,14 +290,17 @@ function saveRequestView(){
  const filters=Object.fromEntries(requestViewFields.map(id=>[id,el(id).value]));
  try{localStorage.setItem("cargo-request-view-"+currentUser.id,JSON.stringify({department:activeDepartment,filters}))}catch{}
 }
-function clearRequestFilters(){
+function clearRequestFilters({preserveGroup=true}={}){
  exactRequestSearch=null;
- requestViewFields.forEach(id=>el(id).value=id==="groupFilter"||id==="ownerFilter"?"all":"");
+ requestViewFields.forEach(id=>{
+  if(id==="groupFilter"&&preserveGroup)return;
+  el(id).value=id==="groupFilter"||id==="ownerFilter"?"all":"";
+ });
 }
 function restoreRequestView(){
  let saved;try{saved=JSON.parse(localStorage.getItem("cargo-request-view-"+currentUser.id)||"null")}catch{}
  if(isAdmin()&&["sales","transport"].includes(saved?.department))setDepartment(saved.department);
- clearRequestFilters();
+ clearRequestFilters({preserveGroup:false});
  for(const id of requestViewFields){
  const value=saved?.filters?.[id],node=el(id);
  if(typeof value!=="string")continue;
