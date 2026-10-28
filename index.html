@@ -379,15 +379,31 @@ function scheduleRequestRefresh(){
  clearTimeout(requestsRefreshTimer);
  requestsRefreshTimer=setTimeout(refreshLiveRequests,100);
 }
+async function refreshChangedRequest(payload){
+ if(!currentUser||document.hidden)return;
+ const userId=currentUser.id,id=payload.new?.id||payload.old?.id;
+ if(!id){scheduleRequestRefresh();return}
+ if(payload.eventType==="DELETE"){
+  requests=requests.filter(row=>String(row.id)!==String(id));
+ }else{
+  const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).eq("id",id).maybeSingle();
+  if(currentUser?.id!==userId)return;
+  if(error){scheduleRequestRefresh();return}
+  requests=requests.filter(row=>String(row.id)!==String(id));
+  if(data&&!data.deleted_at)requests.push({...data,creator_email:data.created_by===userId?currentUser.email:"Team"});
+  requests.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+ }
+ refreshPriceAlerts();renderRequests();updateChatUnread();
+}
 function startRequestUpdates(){
  stopRequestUpdates();
  requestsChannel=db.channel("workspace-requests-"+WORKSPACE_ID+"-"+currentUser.id)
- .on("postgres_changes",{event:"*",schema:"public",table:"transport_requests",filter:"workspace_id=eq."+WORKSPACE_ID},scheduleRequestRefresh)
+ .on("postgres_changes",{event:"*",schema:"public",table:"transport_requests",filter:"workspace_id=eq."+WORKSPACE_ID},refreshChangedRequest)
  .subscribe(status=>{
    el("rows").dataset.liveUpdates=status;
    if(status==="SUBSCRIBED")scheduleRequestRefresh();
  });
- requestsPollTimer=setInterval(scheduleRequestRefresh,60000);
+ requestsPollTimer=setInterval(scheduleRequestRefresh,300000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRequestRefresh()});
 window.addEventListener("online",scheduleRequestRefresh);
@@ -759,14 +775,33 @@ function showChatDetail(show){
   ["chatTitle","chatOpenRequest","chatSubtitle","chatMessages","chatStatus","chatForm"].forEach(id=>el(id).classList.toggle("hidden",!show));
   if(!show){el("chatThread").classList.add("hidden");el("chatParticipants").classList.add("hidden");el("chatAddControls").classList.add("hidden");}
 }
+let inboxLoadPromise=null,inboxCacheUser=null,inboxFullLoadedAt=0;
 async function loadChatInbox(){
+ if(inboxLoadPromise){await inboxLoadPromise;if(inboxCacheUser===currentUser?.id)return}
+ const pending=fetchChatInbox();inboxLoadPromise=pending;
+ try{await pending}finally{if(inboxLoadPromise===pending)inboxLoadPromise=null}
+}
+async function fetchChatInbox(){
   if(!currentUser)return;
   const userId=currentUser.id;
   el("chatInbox").innerHTML='<div class="chat-inbox-status">Loading conversations…</div>';
-  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,chat_peer_id,message,created_at").eq("workspace_id",WORKSPACE_ID).order("created_at",{ascending:false});
+  const full=inboxCacheUser!==userId||Date.now()-inboxFullLoadedAt>=600000;
+  const cutoff=!full&&inboxMessages.length?new Date(Math.max(...inboxMessages.map(m=>Date.parse(m.created_at)))-60000).toISOString():null;
+  const data=[];let error=null;
+  for(let offset=0;;offset+=500){
+   let query=db.from("transport_messages").select("id,request_id,sender_id,recipient_id,chat_peer_id,message,created_at").eq("workspace_id",WORKSPACE_ID);
+   if(cutoff)query=query.gte("created_at",cutoff);
+   const result=await query.order("created_at",{ascending:true}).order("id",{ascending:true}).range(offset,offset+499);
+   if(result.error){error=result.error;break}
+   data.push(...(result.data||[]));
+   if((result.data||[]).length<500)break;
+  }
   if(currentUser?.id!==userId)return;
   if(error){el("chatInbox").innerHTML='<div class="chat-inbox-status">'+escapeHtml("Could not load conversations: "+error.message)+'</div>';return}
-  inboxMessages=data||[];
+  const merged=new Map((full?[]:inboxMessages).map(m=>[String(m.id),m]));
+  data.forEach(m=>merged.set(String(m.id),m));
+  inboxMessages=[...merged.values()].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))||String(b.id).localeCompare(String(a.id),undefined,{numeric:true}));
+  inboxCacheUser=userId;if(full)inboxFullLoadedAt=Date.now();
   const latest=new Map(),started=new Map();inboxMessages.forEach(message=>{const id=String(message.request_id);if(!latest.has(id))latest.set(id,message);started.set(id,message.created_at)});
   const rows=[...latest].map(([id,message])=>({row:requests.find(r=>String(r.id)===id),message})).filter(item=>item.row);
   if(currentChatRequest&&!latest.has(String(currentChatRequest.id)))rows.unshift({row:currentChatRequest,message:null});
@@ -854,7 +889,9 @@ async function loadChatMessages(){
   const userId=currentUser.id,requestId=currentChatRequest.id,peerId=currentChatPeer;
   if(!currentChatPeer){renderChatMessages([]);return}
   const filter="and(sender_id.eq."+currentUser.id+",recipient_id.eq."+currentChatPeer+"),and(sender_id.eq."+currentChatPeer+",recipient_id.eq."+currentUser.id+")";
-  const {data,error}=await db.from("transport_messages").select("id,request_id,sender_id,recipient_id,message,created_at").eq("request_id",currentChatRequest.id).eq("chat_peer_id",currentChatPeer).order("created_at",{ascending:true}).order("id",{ascending:true});
+  await loadChatInbox();
+  const error=null;
+  const data=inboxMessages.filter(m=>String(m.request_id)===String(requestId)&&m.chat_peer_id===peerId).slice().reverse();
   if(error){el("chatStatus").textContent="Could not load messages: "+error.message;return}
   if(currentUser?.id!==userId||currentChatRequest?.id!==requestId||currentChatPeer!==peerId)return;
   renderChatMessages(data||[]);
