@@ -345,10 +345,13 @@ el("statusFilter").className="filter "+(status?statusClass(status):"");
   document.querySelectorAll("[data-status]").forEach(button=>button.classList.toggle("active",button.dataset.status===(status||"All")));
   positionPricePopover();
 }
-async function loadRequestOwners(){
+let requestOwnersLoadedAt=0,requestOwnersUserId=null;
+async function loadRequestOwners(force=true){
+if(!force&&requestOwnersUserId===currentUser?.id&&Date.now()-requestOwnersLoadedAt<300000)return;
 const {data,error}=await db.rpc("list_request_owners",{p_workspace_id:WORKSPACE_ID});
 if(error){toast("Could not load request owners: "+error.message);return}
 requestOwners=data||[];
+requestOwnersLoadedAt=Date.now();requestOwnersUserId=currentUser?.id;
 const selected=el("ownerFilter").value;
 el("ownerFilter").innerHTML='<option value="mine">My requests</option><option value="all">All requests</option>'+requestOwners.map(owner=>'<option value="'+escapeHtml(owner.user_id)+'">'+escapeHtml(owner.display_name)+'</option>').join("");
 el("ownerFilter").value=[...el("ownerFilter").options].some(option=>option.value===selected)?selected:"all";
@@ -361,16 +364,17 @@ function stopRequestUpdates(){
  requestsRefreshTimer=null;requestsPollTimer=null;requestsRefreshPending=false;
 }
 async function refreshLiveRequests(){
- if(!currentUser)return;
+ if(!currentUser||document.hidden)return;
  if(requestsRefreshing){requestsRefreshPending=true;return}
  requestsRefreshing=true;requestsRefreshPending=false;
- try{await Promise.all([loadRequestOwners(),loadRequests()])}
+ try{await Promise.all([loadRequestOwners(false),loadRequests()])}
  finally{
    requestsRefreshing=false;
    if(requestsRefreshPending&&currentUser)scheduleRequestRefresh();
  }
 }
 function scheduleRequestRefresh(){
+ if(!currentUser||document.hidden)return;
  requestsRefreshPending=true;
  clearTimeout(requestsRefreshTimer);
  requestsRefreshTimer=setTimeout(refreshLiveRequests,100);
@@ -383,7 +387,7 @@ function startRequestUpdates(){
    el("rows").dataset.liveUpdates=status;
    if(status==="SUBSCRIBED")scheduleRequestRefresh();
  });
- requestsPollTimer=setInterval(scheduleRequestRefresh,8000);
+ requestsPollTimer=setInterval(scheduleRequestRefresh,60000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRequestRefresh()});
 window.addEventListener("online",scheduleRequestRefresh);
@@ -783,7 +787,7 @@ el("chatOpenRequest").onclick=async()=>{
  const target=document.querySelector('[data-request-id="'+row.id+'"]');
  if(target){target.classList.add("chat-opened-request");target.scrollIntoView({behavior:"smooth",block:"center"});}
 };
-setInterval(async()=>{if(chatPollBusy||document.hidden||!currentUser)return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest&&el("chatModal").classList.contains("show")){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},8000);
+setInterval(async()=>{if(chatPollBusy||document.hidden||!currentUser)return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest&&el("chatModal").classList.contains("show")){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},30000);
 el("chatBack").onclick=()=>{showChatDetail(false)};
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&el("chatModal").classList.contains("show"))closeChat()});
 
