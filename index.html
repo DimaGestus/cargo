@@ -272,8 +272,14 @@ function matchesRouteFilter(row,kind,country,postcode){
  const countryCode=normalizeRouteCode(country),postalCode=normalizeRouteCode(postcode);
  return rowStops(row,kind).some(stop=>(!countryCode||normalizeRouteCode(stop.country).startsWith(countryCode))&&(!postalCode||normalizeRouteCode(stop.postcode).startsWith(postalCode)));
 }
+function stopTimeLabel(stop){
+ const from=String(stop.time_from||"").trim(),to=String(stop.time_to||"").trim();
+ if(stop.fixed_time)return from?"Fixed: "+from:to?"Until "+to:"";
+ if(from&&to)return from+"–"+to;
+ return to?"Until "+to:from?"From "+from:"";
+}
 function renderRouteStops(row){
-const render=stop=>'<div class="route-stop-line"><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong><span class="route-stop-place"><strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(routeCity(stop))+'</span><small>'+escapeHtml([stop.time_from?(stop.fixed_time?"Fixed: ":"")+stop.time_from+(stop.time_to&&!stop.fixed_time?"–"+stop.time_to:""):"",stop.comment?"💬 "+stop.comment:""].filter(Boolean).join(" · "))+'</small></div>';
+const render=stop=>'<div class="route-stop-line"><strong class="route-emphasis route-date">'+dateLabel(stop.date)+'</strong><span class="route-stop-place"><strong class="route-emphasis route-code">'+countryFlag(stop.country)+' '+escapeHtml(stop.postcode)+'</strong> '+escapeHtml(routeCity(stop))+'</span><small>'+escapeHtml([stopTimeLabel(stop),stop.comment?"💬 "+stop.comment:""].filter(Boolean).join(" · "))+'</small></div>';
 return '<div class="route-stops"><div>'+rowStops(row,"loading").map(render).join("")+'</div><span class="arrow">→</span><div>'+rowStops(row,"delivery").map(render).join("")+'</div></div>'+(row.note?'<small>'+escapeHtml(row.note)+'</small>':"");
 }
 function ownerInitials(name,userId){
@@ -753,7 +759,7 @@ let viewedRequest=null;
 function openViewRequest(requestId){
  const row=requests.find(item=>String(item.id)===String(requestId));if(!row)return;
  viewedRequest=row;el("viewRequestTitle").textContent="View request #"+row.id;
- const section=(kind,title)=>'<section><h3>'+title+'</h3>'+rowStops(row,kind).map((stop,i)=>'<div class="request-detail-stop"><strong>Stop '+(i+1)+' · '+escapeHtml([stop.country,stop.postcode,routeCity(stop)].filter(Boolean).join(" "))+'</strong>'+(stop.location?'<p>'+escapeHtml(stop.location)+'</p>':"")+(stop.date?'<p>Date: '+escapeHtml(stop.date)+'</p>':"")+(stop.time_from?'<p>'+(stop.fixed_time?'Fixed time: ':'Time: ')+escapeHtml(stop.time_from+(stop.time_to&&!stop.fixed_time?'–'+stop.time_to:""))+'</p>':"")+(stop.comment?'<p>'+escapeHtml(stop.comment)+'</p>':"")+'</div>').join("")+'</section>';
+ const section=(kind,title)=>'<section><h3>'+title+'</h3>'+rowStops(row,kind).map((stop,i)=>'<div class="request-detail-stop"><strong>Stop '+(i+1)+' · '+escapeHtml([stop.country,stop.postcode,routeCity(stop)].filter(Boolean).join(" "))+'</strong>'+(stop.location?'<p>'+escapeHtml(stop.location)+'</p>':"")+(stop.date?'<p>Date: '+escapeHtml(stop.date)+'</p>':"")+(stopTimeLabel(stop)?'<p>Time: '+escapeHtml(stopTimeLabel(stop))+'</p>':"")+(stop.comment?'<p>'+escapeHtml(stop.comment)+'</p>':"")+'</div>').join("")+'</section>';
  const owner=requestOwners.find(item=>item.user_id===row.created_by)?.display_name||row.creator_email||"Team member";
  const lines=["Sales: "+owner,"Status: "+row.status,"Created: "+createdLabel(row.created_at),"Transport: "+(row.cargo_type||"—"),row.temperature?"Temperature: "+row.temperature:"",row.weight_kg!=null?"Weight: "+Number(row.weight_kg).toLocaleString("en-US")+" kg":"",row.pallet_count!=null?"Pallets: "+row.pallet_count:"","Pallet exchange: "+(row.pallet_exchange?"Yes":"No"),row.client?"Customer: "+row.client:"",row.note?"Notes: "+row.note:"",row.price_eur!=null?"Price: "+priceLabel(row)+" €":"",row.price_comment?"Price comment: "+row.price_comment:""].filter(Boolean);
  el("viewRequestDetails").innerHTML='<div class="request-detail-grid">'+section("loading","Loading")+section("delivery","Delivery")+'</div><div class="request-detail-summary">'+escapeHtml(lines.join("\n"))+'</div>';
