@@ -246,6 +246,11 @@ function palletLabel(row){const count=Number(row.pallet_count)>0?row.pallet_coun
 const escapeHtml=value=>String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 function toast(message){el("toast").textContent=message;el("toast").classList.add("on");setTimeout(()=>el("toast").classList.remove("on"),2200)}
 function showMessage(id,message,error){const node=el(id);node.textContent=message;node.classList.toggle("error",!!error)}
+function connectionErrorMessage(error){
+ const message=String(error?.message||error||"");
+ if(Number(error?.status)===402||/exceed_egress_quota|service.*restricted|spend caps/i.test(message))return "Cargo is temporarily unavailable because Supabase has restricted the project's usage. Ask the administrator to check Supabase usage and billing. Your team access has not changed.";
+ return message||"Could not connect to Cargo. Please try again.";
+}
 function countryFlag(code){const clean=String(code||"").toUpperCase().replace(/[^A-Z]/g,"").slice(0,2);return '<span class="flagicon"><img loading="lazy" alt="" src="https://flagcdn.com/w40/'+clean.toLowerCase()+'.png"></span>'+escapeHtml(clean)}
 function statusClass(status){return ({"Waiting for price":"waiting","Price received":"received","Price sent":"sent","Accepted":"accepted","Declined":"declined","No price":"no-price"})[status]||"no-price"}
 function initials(email){return String(email||"").split("@")[0].split(/[._-]/).filter(Boolean).slice(0,2).map(part=>part[0].toUpperCase()).join("")||"TM"}
@@ -505,7 +510,13 @@ async function initializeApp(user){
   requestViewReady=false;
   currentUser=user;
   const {data:membership,error}=await db.from("workspace_members").select("role,employee_category").eq("workspace_id",WORKSPACE_ID).eq("user_id",user.id).maybeSingle();
-  if(error||!membership){
+  if(error){
+    currentUser=null;
+    el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden");
+    showMessage("loginMessage",connectionErrorMessage(error),true);
+    return;
+  }
+  if(!membership){
     await db.auth.signOut();
     el("appShell").classList.remove("ready");el("authScreen").classList.remove("hidden");
     showMessage("loginMessage","This account is not on the RouteDesk team. Ask the administrator to invite this email.",true);
@@ -545,19 +556,19 @@ el("loginForm").onsubmit=async event=>{
  event.preventDefault();el("loginButton").disabled=true;
  const {error}=await db.auth.signInWithPassword({email:el("loginEmail").value.trim().toLowerCase(),password:el("loginPassword").value});
  el("loginButton").disabled=false;el("loginPassword").value="";
- showMessage("loginMessage",error?error.message:"Signed in.",!!error);
+ showMessage("loginMessage",error?connectionErrorMessage(error):"Signed in.",!!error);
 };
 el("emailLogin").onclick=async()=>{
  if(!el("loginEmail").reportValidity())return;
  el("emailLogin").disabled=true;
  const {error}=await db.auth.signInWithOtp({email:el("loginEmail").value.trim().toLowerCase(),options:{shouldCreateUser:false,emailRedirectTo:APP_URL}});
- el("emailLogin").disabled=false;showMessage("loginMessage",error?error.message:"Check your email for the sign-in link.",!!error);
+ el("emailLogin").disabled=false;showMessage("loginMessage",error?connectionErrorMessage(error):"Check your email for the sign-in link.",!!error);
 };
 el("forgotPassword").onclick=async()=>{
  if(!el("loginEmail").reportValidity())return;
  el("forgotPassword").disabled=true;
  const {error}=await db.auth.resetPasswordForEmail(el("loginEmail").value.trim().toLowerCase(),{redirectTo:APP_URL});
- el("forgotPassword").disabled=false;showMessage("loginMessage",error?error.message:"If this email has an account, a password setup link has been sent.",!!error);
+ el("forgotPassword").disabled=false;showMessage("loginMessage",error?connectionErrorMessage(error):"If this email has an account, a password setup link has been sent.",!!error);
 };
 el("bootstrapForm").onsubmit=async event=>{
   event.preventDefault();const email=el("bootstrapEmail").value.trim().toLowerCase();el("bootstrapButton").disabled=true;showMessage("bootstrapMessage","Sending the administrator invitation…",false);
@@ -1041,12 +1052,11 @@ if(invitationToken&&["invite","recovery"].includes(passwordLinkFlow)){
   showMessage("loginMessage","Opening your personal invitation…",false);
   const {error}=await db.auth.verifyOtp({token_hash:invitationToken,type:passwordLinkFlow});
   const cleanUrl=new URL(location.href);cleanUrl.searchParams.delete("token_hash");cleanUrl.searchParams.delete("type");history.replaceState(null,"",cleanUrl.pathname+cleanUrl.search);
-  if(error){passwordPromptPending=false;showMessage("loginMessage","This invitation has expired or was already used. Ask your administrator for a new personal setup link.",true)}
+  if(error){passwordPromptPending=false;showMessage("loginMessage",Number(error.status)===402?connectionErrorMessage(error):"This invitation has expired or was already used. Ask your administrator for a new personal setup link.",true)}
 }
-if(authLinkError)showMessage("loginMessage","This invitation has expired or was already used. Ask your administrator for a new personal setup link.",true);
+if(authLinkError)showMessage("loginMessage",connectionErrorMessage(authLinkError),true);
 const {data:{session}}=await db.auth.getSession();
 if(session?.user)await enterApp(session.user);
 </script>
 </body>
 </html>
-
