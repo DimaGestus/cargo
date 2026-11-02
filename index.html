@@ -231,9 +231,9 @@ window.addEventListener("storage",event=>{if(currentUser&&event.key==="cargo-cha
 let requestOwners=[];
 const REQUEST_STATUSES=["Waiting for price","Price received","Price sent","Accepted","Declined","No price"];
 let currentCategory="transport",activeDepartment="transport";
-let chatPeople=[],chatPollBusy=false;
+let chatPeople=[];
 let unreadPrices=new Map(),announcedPrices=new Set();
-let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatChannel=null,currentChatPeer=null;
+let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
 function parsePriceInput(input){
  const match=String(input).trim().replace(/[–—]/g,"-").replace(/\s/g,"").match(/^(\d+(?:[.,]\d{1,2})?)(?:-(\d+(?:[.,]\d{1,2})?))?$/);
@@ -367,64 +367,93 @@ el("ownerFilter").innerHTML='<option value="mine">My requests</option><option va
 el("ownerFilter").value=[...el("ownerFilter").options].some(option=>option.value===selected)?selected:"all";
 }
 
-let requestsChannel=null,requestsRefreshTimer=null,requestsPollTimer=null,requestsRefreshing=false,requestsRefreshPending=false;
+let requestsChannel=null,requestsRefreshTimer=null,requestsRefreshing=false,requestsRefreshPending=false,liveGeneration=0;
+let requestLoad=null,requestLoadUser=null,requestChangesDuringLoad=new Map();
 function stopRequestUpdates(){
+ liveGeneration++;
+ requestLoad=null;requestLoadUser=null;requestChangesDuringLoad=new Map();
  if(requestsChannel){db.removeChannel(requestsChannel);requestsChannel=null}
- clearTimeout(requestsRefreshTimer);clearInterval(requestsPollTimer);
- requestsRefreshTimer=null;requestsPollTimer=null;requestsRefreshPending=false;
+ clearTimeout(requestsRefreshTimer);clearTimeout(chatRenderTimer);
+ requestsRefreshTimer=null;requestsRefreshPending=false;
 }
 async function refreshLiveRequests(){
  if(!currentUser||document.hidden)return;
  if(requestsRefreshing){requestsRefreshPending=true;return}
  requestsRefreshing=true;requestsRefreshPending=false;
- try{await Promise.all([loadRequestOwners(false),loadRequests()])}
- finally{
-   requestsRefreshing=false;
-   if(requestsRefreshPending&&currentUser)scheduleRequestRefresh();
- }
+ try{await Promise.all([loadRequestOwners(false),loadRequests(),loadChatInbox(true)]);if(currentChatRequest)await loadChatThreads();await loadChatMessages()}
+ finally{requestsRefreshing=false;if(requestsRefreshPending&&currentUser)scheduleRequestRefresh()}
 }
 function scheduleRequestRefresh(){
- if(!currentUser||document.hidden)return;
+ if(!currentUser)return;
  requestsRefreshPending=true;
+ if(document.hidden)return;
  clearTimeout(requestsRefreshTimer);
  requestsRefreshTimer=setTimeout(refreshLiveRequests,100);
 }
-async function refreshChangedRequest(payload){
- if(!currentUser||document.hidden)return;
- const userId=currentUser.id,id=payload.new?.id||payload.old?.id;
+function refreshChangedRequest(payload){
+ if(!currentUser)return;
+ const row=payload.new,id=row?.id||payload.old?.id;
  if(!id){scheduleRequestRefresh();return}
- if(payload.eventType==="DELETE"){
-  requests=requests.filter(row=>String(row.id)!==String(id));
- }else{
-  const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).eq("id",id).maybeSingle();
-  if(currentUser?.id!==userId)return;
-  if(error){scheduleRequestRefresh();return}
-  requests=requests.filter(row=>String(row.id)!==String(id));
-  if(data&&!data.deleted_at)requests.push({...data,creator_email:data.created_by===userId?currentUser.email:"Team"});
-  requests.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
- }
- refreshPriceAlerts();renderRequests();updateChatUnread();
+ if(payload.eventType!=="DELETE"&&row.workspace_id!==WORKSPACE_ID)return;
+ const value=payload.eventType==="DELETE"||row.deleted_at?null:{...row,creator_email:row.created_by===currentUser.id?currentUser.email:"Team"};
+ if(requestLoad&&requestLoadUser===currentUser.id)requestChangesDuringLoad.set(String(id),value);
+ requests=requests.filter(item=>String(item.id)!==String(id));
+ if(value)requests.push(value);
+ requests.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+ if(!document.hidden){refreshPriceAlerts();renderRequests();renderChatInbox()}
 }
 function startRequestUpdates(){
  stopRequestUpdates();
- requestsChannel=db.channel("workspace-requests-"+WORKSPACE_ID+"-"+currentUser.id)
- .on("postgres_changes",{event:"*",schema:"public",table:"transport_requests",filter:"workspace_id=eq."+WORKSPACE_ID},refreshChangedRequest)
+ const generation=liveGeneration;
+ const channel=db.channel("workspace-requests-"+WORKSPACE_ID+"-"+currentUser.id);
+ requestsChannel=channel;
+ channel.on("postgres_changes",{event:"*",schema:"public",table:"transport_requests",filter:"workspace_id=eq."+WORKSPACE_ID},payload=>{if(generation===liveGeneration)refreshChangedRequest(payload)})
+ .on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"workspace_id=eq."+WORKSPACE_ID},payload=>{if(generation===liveGeneration)receiveChatMessage(payload.new)})
  .subscribe(status=>{
+   if(generation!==liveGeneration)return;
    el("rows").dataset.liveUpdates=status;
+   // Catch changes missed before joining or while the connection was down.
    if(status==="SUBSCRIBED")scheduleRequestRefresh();
+   else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status))toast("Live updates disconnected. Reconnecting… Use Refresh if needed.");
  });
- requestsPollTimer=setInterval(scheduleRequestRefresh,300000);
 }
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRequestRefresh()});
-window.addEventListener("online",scheduleRequestRefresh);
-window.addEventListener("focus",scheduleRequestRefresh);
-
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden&&currentUser){
+   refreshPriceAlerts();renderRequests();renderChatInbox();if(chatRenderPending)scheduleChatRender();
+   if(requestsRefreshPending)scheduleRequestRefresh();
+ }
+});
 async function loadRequests(){
-  if(!currentUser)return;
-  const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).is("deleted_at",null).order("created_at",{ascending:false});
-  if(error){toast("Could not load requests: "+error.message);return}
-  requests=(data||[]).map(row=>Object.assign({},row,{creator_email:row.created_by===currentUser.id?currentUser.email:"Team"}));
-  refreshPriceAlerts();renderRequests();
+ if(!currentUser)return;
+ const userId=currentUser.id,generation=liveGeneration;
+ if(requestLoad&&requestLoadUser===userId)return requestLoad;
+ const changes=new Map();requestChangesDuringLoad=changes;requestLoadUser=userId;
+ const pending=(async()=>{
+  const rows=[];
+  for(let offset=0;;offset+=500){
+   const {data,error}=await db.from("transport_requests").select("*").eq("workspace_id",WORKSPACE_ID).is("deleted_at",null).order("id",{ascending:false}).range(offset,offset+499);
+   if(currentUser?.id!==userId||generation!==liveGeneration)return;
+   if(error){toast("Could not load requests: "+connectionErrorMessage(error));return}
+   rows.push(...(data||[]));if((data||[]).length<500)break;
+  }
+  const merged=new Map(rows.map(row=>[String(row.id),{...row,creator_email:row.created_by===userId?currentUser.email:"Team"}]));
+  changes.forEach((row,id)=>{if(row)merged.set(id,row);else merged.delete(id)});
+  requests=[...merged.values()].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  refreshPriceAlerts();renderRequests();renderChatInbox();
+ })();
+ requestLoad=pending;
+ try{await pending}finally{if(requestLoad===pending){requestLoad=null;requestLoadUser=null;requestChangesDuringLoad=new Map()}}
+}
+
+async function refreshSavedRequest(id,fields){
+ if(!currentUser)return;
+ const userId=currentUser.id;
+ let query=db.from("transport_requests");
+ query=fields?query.update(fields):query;
+ const {data,error}=await query.select("*").eq("id",id).eq("workspace_id",WORKSPACE_ID).maybeSingle();
+ if(currentUser?.id!==userId)return;
+ if(error||!data){toast("Could not refresh request: "+(error?.message||"Request not available."));return}
+ refreshChangedRequest({eventType:"UPDATE",new:data});
 }
 function priceFingerprint(row){return String(row.price_eur)+":"+String(row.price_eur_max||"")+":"+String(row.price_entered_by||"")}
 function pendingPriceAlerts(rows,isSales,seen,userId){
@@ -533,8 +562,8 @@ async function initializeApp(user){
   await loadRequestOwners();
   restoreRequestView();
   await loadRequests();
-  startRequestUpdates();
   await loadChatInbox();
+  startRequestUpdates();
   if(passwordPromptPending||user.user_metadata?.password_setup_required)openPasswordForm();
 }
 document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>{if(button.dataset.close==="chatModal")closeChat();else el(button.dataset.close).classList.remove("show")}));
@@ -745,10 +774,10 @@ el("requestForm").onsubmit=async event=>{
  el("saveRequest").disabled=true;showMessage("requestSaveMessage","Saving…",false);
  try{
  let result;
- if(activeEditRequest)result=await db.from("transport_requests").update(fields).eq("id",activeEditRequest).eq("workspace_id",WORKSPACE_ID).eq("created_by",currentUser.id).select("id").maybeSingle();
- else result=await db.from("transport_requests").insert({...fields,workspace_id:WORKSPACE_ID,created_by:currentUser.id}).select("id").single();
+ if(activeEditRequest)result=await db.from("transport_requests").update(fields).eq("id",activeEditRequest).eq("workspace_id",WORKSPACE_ID).eq("created_by",currentUser.id).select("*").maybeSingle();
+ else result=await db.from("transport_requests").insert({...fields,workspace_id:WORKSPACE_ID,created_by:currentUser.id}).select("*").single();
  if(result.error||!result.data)throw new Error(result.error?.message||"Request could not be saved.");
- const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestModal").classList.remove("show");await loadRequests();toast(wasEditing?"Request updated":"Request created");
+ const wasEditing=!!activeEditRequest;activeEditRequest=null;el("requestModal").classList.remove("show");refreshChangedRequest({eventType:"UPDATE",new:result.data});toast(wasEditing?"Request updated":"Request created");
  }catch(error){showMessage("requestSaveMessage","Could not save request: "+error.message,true)}
  finally{el("saveRequest").disabled=false}
 };
@@ -791,21 +820,43 @@ function showChatDetail(show){
   ["chatTitle","chatOpenRequest","chatSubtitle","chatMessages","chatStatus","chatForm"].forEach(id=>el(id).classList.toggle("hidden",!show));
   if(!show){el("chatThread").classList.add("hidden");el("chatParticipants").classList.add("hidden");el("chatAddControls").classList.add("hidden");}
 }
-let inboxLoadPromise=null,inboxCacheUser=null,inboxFullLoadedAt=0;
-async function loadChatInbox(){
- if(inboxLoadPromise){await inboxLoadPromise;if(inboxCacheUser===currentUser?.id)return}
- const pending=fetchChatInbox();inboxLoadPromise=pending;
+let chatRenderTimer=null,chatRenderPending=false;
+function receiveChatMessage(message){
+ if(!currentUser||!message?.id||message.workspace_id!==WORKSPACE_ID)return;
+ if(inboxMessages.some(item=>String(item.id)===String(message.id)))return;
+ inboxMessages.push(message);
+ inboxMessages.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))||String(b.id).localeCompare(String(a.id),undefined,{numeric:true}));
+ chatRenderPending=true;
+ if(!document.hidden){renderChatInbox();scheduleChatRender()}
+}
+function scheduleChatRender(){
+ clearTimeout(chatRenderTimer);
+ if(!currentUser||document.hidden||!currentChatRequest)return;
+ const userId=currentUser.id,requestId=currentChatRequest.id;
+ chatRenderTimer=setTimeout(async()=>{
+  if(currentUser?.id!==userId||currentChatRequest?.id!==requestId)return;
+  chatRenderPending=false;
+  await loadChatThreads();await loadChatMessages();
+ },100);
+}
+let inboxLoadPromise=null,inboxCacheUser=null;
+async function loadChatInbox(force=false,requestId=null){
+ if(!force&&inboxCacheUser===currentUser?.id){renderChatInbox();return}
+ if(inboxLoadPromise){await inboxLoadPromise;if(!force&&inboxCacheUser===currentUser?.id)return}
+ const pending=fetchChatInbox(force,requestId);inboxLoadPromise=pending;
  try{await pending}finally{if(inboxLoadPromise===pending)inboxLoadPromise=null}
 }
-async function fetchChatInbox(){
+async function fetchChatInbox(force=false,requestId=null){
   if(!currentUser)return;
   const userId=currentUser.id;
   el("chatInbox").innerHTML='<div class="chat-inbox-status">Loading conversations…</div>';
-  const full=inboxCacheUser!==userId||Date.now()-inboxFullLoadedAt>=600000;
+  const full=force||inboxCacheUser!==userId;
   const cutoff=!full&&inboxMessages.length?new Date(Math.max(...inboxMessages.map(m=>Date.parse(m.created_at)))-60000).toISOString():null;
+  const receivedBefore=new Set(inboxMessages.map(m=>String(m.id)));
   const data=[];let error=null;
   for(let offset=0;;offset+=500){
    let query=db.from("transport_messages").select("id,request_id,sender_id,recipient_id,chat_peer_id,message,created_at").eq("workspace_id",WORKSPACE_ID);
+   if(requestId!==null)query=query.eq("request_id",requestId);
    if(cutoff)query=query.gte("created_at",cutoff);
    const result=await query.order("created_at",{ascending:true}).order("id",{ascending:true}).range(offset,offset+499);
    if(result.error){error=result.error;break}
@@ -814,10 +865,14 @@ async function fetchChatInbox(){
   }
   if(currentUser?.id!==userId)return;
   if(error){el("chatInbox").innerHTML='<div class="chat-inbox-status">'+escapeHtml("Could not load conversations: "+error.message)+'</div>';return}
-  const merged=new Map((full?[]:inboxMessages).map(m=>[String(m.id),m]));
+  const merged=new Map((full?inboxMessages.filter(m=>(requestId!==null&&String(m.request_id)!==String(requestId))||!receivedBefore.has(String(m.id))):inboxMessages).map(m=>[String(m.id),m]));
   data.forEach(m=>merged.set(String(m.id),m));
   inboxMessages=[...merged.values()].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))||String(b.id).localeCompare(String(a.id),undefined,{numeric:true}));
-  inboxCacheUser=userId;if(full)inboxFullLoadedAt=Date.now();
+  inboxCacheUser=userId;
+  renderChatInbox();
+}
+function renderChatInbox(){
+  if(!currentUser)return;
   const latest=new Map(),started=new Map();inboxMessages.forEach(message=>{const id=String(message.request_id);if(!latest.has(id))latest.set(id,message);started.set(id,message.created_at)});
   const rows=[...latest].map(([id,message])=>({row:requests.find(r=>String(r.id)===id),message})).filter(item=>item.row);
   if(currentChatRequest&&!latest.has(String(currentChatRequest.id)))rows.unshift({row:currentChatRequest,message:null});
@@ -838,7 +893,6 @@ el("chatOpenRequest").onclick=async()=>{
  const target=document.querySelector('[data-request-id="'+row.id+'"]');
  if(target){target.classList.add("chat-opened-request");target.scrollIntoView({behavior:"smooth",block:"center"});}
 };
-setInterval(async()=>{if(chatPollBusy||document.hidden||!currentUser)return;chatPollBusy=true;try{await loadChatInbox();if(currentChatRequest&&el("chatModal").classList.contains("show")){await loadChatThreads();await loadChatMessages()}}finally{chatPollBusy=false}},30000);
 el("chatBack").onclick=()=>{showChatDetail(false)};
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&el("chatModal").classList.contains("show"))closeChat()});
 
@@ -848,11 +902,11 @@ function renderChatMessages(items){
   box.scrollTop=box.scrollHeight;
 }
 async function loadChatThreads(){
- const row=currentChatRequest;if(!row)return;
+ const row=currentChatRequest,userId=currentUser?.id;if(!row||!userId)return;
  const {data,error}=await db.rpc("cargo_chat_people",{p_request_id:row.id,p_peer_id:null});
+ if(currentUser?.id!==userId||currentChatRequest?.id!==row.id)return;
  if(error){el("chatStatus").textContent="Could not load colleagues: "+error.message;return}
- const {data:messages,error:messageError}=await db.from("transport_messages").select("chat_peer_id").eq("request_id",row.id).order("created_at",{ascending:false});
- if(messageError){el("chatStatus").textContent=messageError.message;return}
+ const messages=inboxMessages.filter(message=>String(message.request_id)===String(row.id));
  const existing=[...new Set((messages||[]).map(m=>m.chat_peer_id).filter(Boolean))];
  const peers=[...new Set([...existing,...(data||[]).map(p=>p.peer_id)])].filter(id=>id!==row.created_by);
  currentChatPeer=peers.includes(currentChatPeer)?currentChatPeer:existing[0]||(peers.includes(currentUser.id)?currentUser.id:null);
@@ -904,47 +958,41 @@ async function loadChatMessages(){
   if(!currentChatRequest||!currentUser)return;
   const userId=currentUser.id,requestId=currentChatRequest.id,peerId=currentChatPeer;
   if(!currentChatPeer){renderChatMessages([]);return}
-  const filter="and(sender_id.eq."+currentUser.id+",recipient_id.eq."+currentChatPeer+"),and(sender_id.eq."+currentChatPeer+",recipient_id.eq."+currentUser.id+")";
-  await loadChatInbox();
-  const error=null;
   const data=inboxMessages.filter(m=>String(m.request_id)===String(requestId)&&m.chat_peer_id===peerId).slice().reverse();
-  if(error){el("chatStatus").textContent="Could not load messages: "+error.message;return}
   if(currentUser?.id!==userId||currentChatRequest?.id!==requestId||currentChatPeer!==peerId)return;
   renderChatMessages(data||[]);
   markChatMessagesRead(data||[]);
 }
 async function openChat(requestId){
   const row=requests.find(item=>String(item.id)===String(requestId));if(!row)return;
-  if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
   showChatDetail(true);el("chatLauncher").setAttribute("aria-expanded","true");
   currentChatRequest=row;currentChatPeer=null;el("chatAddPicker").classList.add("hidden");el("chatAddToggle").setAttribute("aria-expanded","false");el("chatAddChoices").innerHTML="";el("chatAddChoices").dataset.signature="";
   el("chatTitle").textContent="Cargo chat · request #"+row.id;
   el("chatSubtitle").textContent=row.loading_country+" "+row.loading_postcode+" → "+row.delivery_country+" "+row.delivery_postcode;
   el("chatStatus").textContent="";el("chatInput").value="";el("chatMessages").innerHTML='<div class="empty">Loading messages…</div>';el("chatModal").classList.add("show");
-  await loadChatInbox();await loadChatThreads();await loadChatMessages();
-  currentChatChannel=db.channel("transport-messages-"+row.id+"-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"transport_messages",filter:"request_id=eq."+row.id},async()=>{await loadChatInbox();await loadChatThreads();await loadChatMessages()}).subscribe();
+  await loadChatInbox(true,row.id);await loadChatThreads();await loadChatMessages();
+  // The workspace subscription also receives authorized chat messages.
 }
 el("chatThread").onchange=async event=>{currentChatPeer=event.target.value||null;el("chatStatus").textContent="";await loadChatParticipants();await loadChatMessages();el("chatInput").disabled=!currentChatPeer;el("sendChatMessage").disabled=!currentChatPeer};
 async function closeChat(){
   el("chatModal").classList.remove("show");el("chatLauncher").setAttribute("aria-expanded","false");showChatDetail(false);currentChatRequest=null;currentChatPeer=null;
-  if(currentChatChannel){await db.removeChannel(currentChatChannel);currentChatChannel=null}
 }
 el("chatForm").onsubmit=async event=>{
   event.preventDefault();if(!currentChatRequest||!currentChatPeer)return;
   const message=el("chatInput").value.trim();if(!message)return;
   const send=el("sendChatMessage");send.disabled=true;el("chatStatus").textContent="Sending…";
-  const {error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,recipient_id:currentChatRequest.created_by===currentUser.id?currentChatPeer:currentChatRequest.created_by,chat_peer_id:currentChatPeer,message});
+  const {data,error}=await db.from("transport_messages").insert({request_id:currentChatRequest.id,workspace_id:WORKSPACE_ID,sender_id:currentUser.id,recipient_id:currentChatRequest.created_by===currentUser.id?currentChatPeer:currentChatRequest.created_by,chat_peer_id:currentChatPeer,message}).select("id,request_id,workspace_id,sender_id,recipient_id,chat_peer_id,message,created_at").single();
   send.disabled=false;
   if(error){el("chatStatus").textContent="Could not send message: "+error.message;return}
-  el("chatInput").value="";el("chatStatus").textContent="";await loadChatMessages();await loadChatInbox();el("chatInput").focus();
+  el("chatInput").value="";el("chatStatus").textContent="";receiveChatMessage(data);await loadChatMessages();el("chatInput").focus();
 };
 el("rows").onchange=async event=>{
 const selector=event.target.closest("[data-request-status]");if(activeDepartment!=="sales"||!selector||!REQUEST_STATUSES.includes(selector.value))return;
 const value=selector.value;selector.disabled=true;
 try{
-const {data,error}=await db.from("transport_requests").update({status:value}).eq("id",selector.dataset.requestStatus).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
+const {data,error}=await db.from("transport_requests").update({status:value}).eq("id",selector.dataset.requestStatus).eq("workspace_id",WORKSPACE_ID).select("*").maybeSingle();
 if(error||!data)throw new Error(error?.message||"This request could not be updated.");
-acknowledgePrice(selector.dataset.requestStatus);await loadRequests();toast("Status updated");
+refreshChangedRequest({eventType:"UPDATE",new:data});acknowledgePrice(selector.dataset.requestStatus);toast("Status updated");
 }catch(error){toast("Could not update status: "+error.message);selector.value="";selector.disabled=false}
 };
 el("rows").onclick=async event=>{
@@ -961,7 +1009,7 @@ el("rows").onclick=async event=>{
   const price=event.target.closest("[data-price]");
   if(price){openPricePopover(price);return}
   const status=event.target.closest("[data-next]");
-  if(status){const {error}=await db.from("transport_requests").update({status:status.dataset.next}).eq("id",status.dataset.status).eq("workspace_id",WORKSPACE_ID);if(error){toast("Could not update request: "+error.message);return}await loadRequests()}
+  if(status){await refreshSavedRequest(status.dataset.status,{status:status.dataset.next})}
 };
 
 let priceAnchor=null;
@@ -1010,9 +1058,9 @@ el("priceForm").onsubmit=async event=>{
   if(!commentOnly&&!parsed){el("priceError").textContent="Enter a positive price or range, e.g. 1200-1250. The second price must be at least the first.";el("priceError").classList.remove("hidden");return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
   try{
-    const {data,error}=await db.from("transport_requests").update(commentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:parsed.min,price_eur_max:parsed.max,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(requestId))?.price_eur?{status:"Price received"}:{}),price_entered_by:currentUser.id}).eq("id",requestId).eq("workspace_id",WORKSPACE_ID).select("id").maybeSingle();
+    const {data,error}=await db.from("transport_requests").update(commentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:parsed.min,price_eur_max:parsed.max,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(requestId))?.price_eur?{status:"Price received"}:{}),price_entered_by:currentUser.id}).eq("id",requestId).eq("workspace_id",WORKSPACE_ID).select("*").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
-    const commentSaved=commentOnly;closePricePopover();await loadRequests();toast(commentSaved?"Comment saved":"Price saved");
+    const commentSaved=commentOnly;closePricePopover();refreshChangedRequest({eventType:"UPDATE",new:data});toast(commentSaved?"Comment saved":"Price saved");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
   finally{save.disabled=false}
 };
@@ -1025,17 +1073,17 @@ el("confirmDeleteRequest").onclick=async()=>{
  const {error}=await db.rpc("set_own_request_deleted",{p_request_id:row.id,p_deleted:true});
  el("confirmDeleteRequest").disabled=false;
  if(error){showMessage("deleteRequestError",error.message,true);return}
- lastDeletedRequest=row.id;pendingDeleteRequest=null;el("deleteRequestModal").classList.remove("show");await loadRequests();el("undoRequestDelete").classList.remove("hidden");toast("Request removed. Use Undo to restore.");
+ lastDeletedRequest=row.id;pendingDeleteRequest=null;el("deleteRequestModal").classList.remove("show");refreshChangedRequest({eventType:"DELETE",old:{id:row.id}});el("undoRequestDelete").classList.remove("hidden");toast("Request removed. Use Undo to restore.");
 };
 el("undoRequestDelete").onclick=async()=>{
  if(!lastDeletedRequest)return;el("undoRequestDelete").disabled=true;
  const {error}=await db.rpc("set_own_request_deleted",{p_request_id:lastDeletedRequest,p_deleted:false});
  el("undoRequestDelete").disabled=false;if(error){toast(error.message);return}
- lastDeletedRequest=null;el("undoRequestDelete").classList.add("hidden");await loadRequests();toast("Request restored");
+ const restoredId=lastDeletedRequest;lastDeletedRequest=null;el("undoRequestDelete").classList.add("hidden");await refreshSavedRequest(restoredId);toast("Request restored");
 };
 
 el("showAllRequests").onclick=()=>{clearRequestFilters();renderRequests()};
-el("refreshRequests").onclick=loadRequests;
+el("refreshRequests").onclick=scheduleRequestRefresh;
 el("tabs").onclick=event=>{const button=event.target.closest("[data-status]");if(button){el("statusFilter").value=button.dataset.status==="All"?"":button.dataset.status;renderRequests()}};
 el("groupFilter").addEventListener("change",()=>{if(el("groupFilter").value==="all")el("ownerFilter").value="all";renderRequests()});
 el("ownerFilter").addEventListener("change",renderRequests);
