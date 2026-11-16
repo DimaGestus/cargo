@@ -747,7 +747,21 @@ el("aiRequestText").addEventListener("paste",event=>{
  if(!files.length)return;event.preventDefault();
  files.forEach(file=>{if(aiImageData.length>=3||file.size>2*1024*1024){showMessage("aiRequestMessage","Up to 3 images, maximum 2 MB each.",true);return}const reader=new FileReader();reader.onload=()=>{if(aiImageData.length<3){aiImageData.push(String(reader.result));renderAiImages()}};reader.readAsDataURL(file)});
 });
+function normalizeDeliveryDeadlineTimes(draft,sourceText){
+ const deliveryStops=Array.isArray(draft.delivery_stops)?draft.delivery_stops:[];
+ if(!deliveryStops.length)return;
+ const deliveryLines=String(sourceText||"").split(/\r?\n/).filter(line=>/(?:delivery|unload|unloading|entlad|abladen|anliefer|lieferung|выгруз|доставк)/i.test(line));
+ deliveryLines.forEach((line,index)=>{
+  const stop=deliveryStops[index];if(!stop)return;
+  const match=line.match(/\b(?:bis|until|no later than|latest|by|iki)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(?:uhr)?\b/i);
+  if(!match)return;
+  const deadline=String(match[1]).padStart(2,"0")+":"+(match[2]||"00");
+  stop.time_to=deadline;
+  if(String(stop.time_from||"").trim()===deadline)stop.time_from="";
+ });
+}
 function fillAiDraft(draft){
+ normalizeDeliveryDeadlineTimes(draft,el("aiRequestText").value);
  setTransportType(draft.transport_type);setStops("loading",draft.loading_stops);setStops("delivery",draft.delivery_stops);
  el("temperature").value=draft.temperature??"";el("weight").value=draft.weight_kg??"";el("pallets").value=draft.pallet_count??"";el("palletExchange").checked=!!draft.pallet_exchange;el("client").value=draft.client||"";el("requestNote").value=draft.note||"";autoRequestGroup();showRequestDetails();
  showMessage("requestSaveMessage","Draft filled from your request. Review all fields"+(draft.warnings?.length?": "+draft.warnings.join(" "):" before creating it."),false);
