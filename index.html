@@ -760,8 +760,16 @@ function normalizeDeliveryDeadlineTimes(draft,sourceText){
   if(String(stop.time_from||"").trim()===deadline)stop.time_from="";
  });
 }
+function normalizeAiTransportType(draft,sourceText){
+ if(!/(?:frozen\s+goods|deep[-\s]?frozen|frozen|tiefk[uü]hl|tiefgek[uü]hlt|gefroren|congelat|šaldyt)/i.test(String(sourceText||"")))return;
+ const types=transportTypeValues(draft.transport_type);
+ if(!types.includes("Frigo"))types.unshift("Frigo");
+ draft.transport_type=types;
+}
 function fillAiDraft(draft){
- normalizeDeliveryDeadlineTimes(draft,el("aiRequestText").value);
+ const sourceText=el("aiRequestText").value;
+ normalizeDeliveryDeadlineTimes(draft,sourceText);
+ normalizeAiTransportType(draft,sourceText);
  setTransportType(draft.transport_type);setStops("loading",draft.loading_stops);setStops("delivery",draft.delivery_stops);
  el("temperature").value=draft.temperature??"";el("weight").value=draft.weight_kg??"";el("pallets").value=draft.pallet_count??"";el("palletExchange").checked=!!draft.pallet_exchange;el("client").value=draft.client||"";el("requestNote").value=draft.note||"";autoRequestGroup();showRequestDetails();
  showMessage("requestSaveMessage","Draft filled from your request. Review all fields"+(draft.warnings?.length?": "+draft.warnings.join(" "):" before creating it."),false);
