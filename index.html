@@ -1080,7 +1080,7 @@ el("priceForm").onsubmit=async event=>{
   if(!commentOnly&&!parsed){el("priceError").textContent="Enter a positive price or range, e.g. 1200-1250. The second price must be at least the first.";el("priceError").classList.remove("hidden");return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
   try{
-    const {data,error}=await db.from("transport_requests").update(commentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:parsed.min,price_eur_max:parsed.max,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(requestId))?.price_eur?{status:"Price received"}:{}),price_entered_by:currentUser.id}).eq("id",requestId).eq("workspace_id",WORKSPACE_ID).select("*").maybeSingle();
+    const {data,error}=await db.from("transport_requests").update(commentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:parsed.min,price_eur_max:parsed.max,price_comment:el("priceComment").value.trim()||null,...((()=>{const row=requests.find(r=>String(r.id)===String(requestId));return !row?.price_eur||row.status==="Waiting for price"?{status:"Price received"}:{}})()),price_entered_by:currentUser.id}).eq("id",requestId).eq("workspace_id",WORKSPACE_ID).select("*").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
     const commentSaved=commentOnly;closePricePopover();refreshChangedRequest({eventType:"UPDATE",new:data});toast(commentSaved?"Comment saved":"Price saved");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
