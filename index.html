@@ -747,7 +747,29 @@ el("aiRequestText").addEventListener("paste",event=>{
  if(!files.length)return;event.preventDefault();
  files.forEach(file=>{if(aiImageData.length>=3||file.size>2*1024*1024){showMessage("aiRequestMessage","Up to 3 images, maximum 2 MB each.",true);return}const reader=new FileReader();reader.onload=()=>{if(aiImageData.length<3){aiImageData.push(String(reader.result));renderAiImages()}};reader.readAsDataURL(file)});
 });
+function normalizeDeliveryDeadlineTimes(draft,sourceText){
+ const deliveryStops=Array.isArray(draft.delivery_stops)?draft.delivery_stops:[];
+ if(!deliveryStops.length)return;
+ const deliveryLines=String(sourceText||"").split(/\r?\n/).filter(line=>/(?:delivery|unload|unloading|entlad|abladen|anliefer|lieferung|выгруз|доставк)/i.test(line));
+ deliveryLines.forEach((line,index)=>{
+  const stop=deliveryStops[index];if(!stop)return;
+  const match=line.match(/\b(?:bis|until|no later than|latest|by|iki)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(?:uhr)?\b/i);
+  if(!match)return;
+  const deadline=String(match[1]).padStart(2,"0")+":"+(match[2]||"00");
+  stop.time_to=deadline;
+  if(String(stop.time_from||"").trim()===deadline)stop.time_from="";
+ });
+}
+function normalizeAiTransportType(draft,sourceText){
+ if(!/(?:frozen\s+goods|deep[-\s]?frozen|frozen|tiefk[uü]hl|tiefgek[uü]hlt|gefroren|congelat|šaldyt)/i.test(String(sourceText||"")))return;
+ const types=transportTypeValues(draft.transport_type);
+ if(!types.includes("Frigo"))types.unshift("Frigo");
+ draft.transport_type=types;
+}
 function fillAiDraft(draft){
+ const sourceText=el("aiRequestText").value;
+ normalizeDeliveryDeadlineTimes(draft,sourceText);
+ normalizeAiTransportType(draft,sourceText);
  setTransportType(draft.transport_type);setStops("loading",draft.loading_stops);setStops("delivery",draft.delivery_stops);
  el("temperature").value=draft.temperature??"";el("weight").value=draft.weight_kg??"";el("pallets").value=draft.pallet_count??"";el("palletExchange").checked=!!draft.pallet_exchange;el("client").value=draft.client||"";el("requestNote").value=draft.note||"";autoRequestGroup();showRequestDetails();
  showMessage("requestSaveMessage","Draft filled from your request. Review all fields"+(draft.warnings?.length?": "+draft.warnings.join(" "):" before creating it."),false);
@@ -1058,7 +1080,7 @@ el("priceForm").onsubmit=async event=>{
   if(!commentOnly&&!parsed){el("priceError").textContent="Enter a positive price or range, e.g. 1200-1250. The second price must be at least the first.";el("priceError").classList.remove("hidden");return}
   const save=el("savePrice");save.disabled=true;el("priceError").classList.add("hidden");
   try{
-    const {data,error}=await db.from("transport_requests").update(commentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:parsed.min,price_eur_max:parsed.max,price_comment:el("priceComment").value.trim()||null,...(!requests.find(r=>String(r.id)===String(requestId))?.price_eur?{status:"Price received"}:{}),price_entered_by:currentUser.id}).eq("id",requestId).eq("workspace_id",WORKSPACE_ID).select("*").maybeSingle();
+    const {data,error}=await db.from("transport_requests").update(commentOnly?{price_comment:el("priceComment").value.trim()||null}:{price_eur:parsed.min,price_eur_max:parsed.max,price_comment:el("priceComment").value.trim()||null,...((()=>{const row=requests.find(r=>String(r.id)===String(requestId));return !row?.price_eur||row.status==="Waiting for price"?{status:"Price received"}:{}})()),price_entered_by:currentUser.id}).eq("id",requestId).eq("workspace_id",WORKSPACE_ID).select("*").maybeSingle();
     if(error||!data)throw new Error(error?.message||"This request could not be updated.");
     const commentSaved=commentOnly;closePricePopover();refreshChangedRequest({eventType:"UPDATE",new:data});toast(commentSaved?"Comment saved":"Price saved");
   }catch(error){el("priceError").textContent="Could not save price: "+error.message;el("priceError").classList.remove("hidden");positionPricePopover()}
