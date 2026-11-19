@@ -831,7 +831,7 @@ el("viewRequestMap").onclick=()=>{if(viewedRequest)openCargoMap(viewedRequest)};
 document.addEventListener("keydown",event=>{if(event.key==="Escape")el("viewRequestModal").classList.remove("show")});
 function openCargoMap(row,codesOnly=false){
   const address=(country,postcode,city)=>[postcode,city,country].filter(Boolean).join(", ");
-  const stops=[...rowStops(row,"loading"),...rowStops(row,"delivery")],addresses=stops.map(s=>address(s.country,s.postcode,codesOnly?(s.postcode?"":routeCity(s)):s.location));
+  const stops=[...rowStops(row,"loading"),...rowStops(row,"delivery")],addresses=stops.map(s=>address(s.country,s.postcode,codesOnly?routeCity(s):s.location));
   const url="https://www.google.com/maps/dir/?api=1&origin="+encodeURIComponent(addresses[0])+"&destination="+encodeURIComponent(addresses[addresses.length-1])+(addresses.length>2?"&waypoints="+encodeURIComponent(addresses.slice(1,-1).join("|")):"");
   window.open(url,"_blank","noopener");
 }
