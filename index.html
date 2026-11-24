@@ -301,7 +301,7 @@ function renderSalesStatistics(){
  const monthlyTotals=new Map();requests.forEach(request=>{const createdAt=String(request.created_at||"");const monthKey=createdAt.slice(0,7);if(/^\d{4}-\d{2}$/.test(monthKey))monthlyTotals.set(monthKey,(monthlyTotals.get(monthKey)||0)+1)});const monthlyRows=[...monthlyTotals.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,count])=>{const [year,month]=key.split("-").map(Number);const label=new Intl.DateTimeFormat("en",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(year,month-1,1)));return {label,count}});container.innerHTML='<div class="tablewrap"><table class="sales-stats-table"><thead><tr><th>Initials</th><th>Sales employee</th><th>Today</th><th>This week</th><th>This month</th></tr></thead><tbody>'+(rows.length?rows.map(row=>'<tr><td><span class="sales-stats-initials">'+escapeHtml(ownerInitials(row.name,row.member.user_id))+'</span></td><td>'+escapeHtml(row.name)+'</td><td>'+row.today+'</td><td>'+row.week+'</td><td>'+row.month+'</td></tr>').join(""):'<tr><td colspan="5" class="sales-stats-empty">No Sales team members found.</td></tr>')+'</tbody><tfoot><tr><td colspan="2">Total</td><td>'+totals.today+'</td><td>'+totals.week+'</td><td>'+totals.month+'</td></tr></tfoot></table></div><h3 class="sales-monthly-title">Total requests by month</h3><div class="tablewrap"><table class="sales-stats-table sales-monthly-table"><thead><tr><th>Month</th><th>Total requests</th></tr></thead><tbody>'+(monthlyRows.length?monthlyRows.map(row=>'<tr><td>'+escapeHtml(row.label)+'</td><td>'+row.count+'</td></tr>').join(""):'<tr><td colspan="2" class="sales-stats-empty">No requests found.</td></tr>')+'</tbody></table></div>';
 }
 el("salesStatisticsButton").onclick=async()=>{
- if(!isAdmin())return;
+ if(!(isAdmin()||currentCategory==="sales"))return;
  el("salesStatisticsModal").classList.add("show");el("salesStatsStatus").textContent="Loading Sales statistics…";el("salesStatsTable").innerHTML="";
  await loadRequests();
  const {data,error}=await db.rpc("admin_team_members",{p_workspace_id:WORKSPACE_ID});
@@ -596,7 +596,7 @@ if(changed)clearRequestFilters();
     button.setAttribute("aria-pressed",String(button.dataset.department===department));
   });
   el("adminBadge").classList.toggle("hidden",!isAdmin());
-  el("salesStatisticsButton").classList.toggle("hidden",!isAdmin());
+  el("salesStatisticsButton").classList.toggle("hidden",!(isAdmin()||currentCategory==="sales"));
   renderRequests();
 }
 el("departmentNav").onclick=event=>{const button=event.target.closest("[data-department]");if(button){closePricePopover();setDepartment(button.dataset.department)}};
