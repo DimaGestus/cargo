@@ -290,7 +290,7 @@ function renderSalesStatistics(){
  const now=new Date(),todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),weekStartDate=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)),weekStart=weekStartDate.getTime(),monthStart=new Date(now.getFullYear(),now.getMonth(),1).getTime(),weekEndDate=new Date(weekStartDate.getFullYear(),weekStartDate.getMonth(),weekStartDate.getDate()+6);
  const dayLabel=new Intl.DateTimeFormat("en",{day:"numeric",month:"short"}),monthLabel=new Intl.DateTimeFormat("en",{month:"long",year:"numeric"}),rangeDay=date=>dayLabel.format(date);
  el("salesStatsStatus").textContent="Today: "+rangeDay(now)+" · Week: "+rangeDay(weekStartDate)+"–"+rangeDay(weekEndDate)+" · Month: "+monthLabel.format(now);
- const salesMembers=[...(salesStatsTeamData.members||[]),...(salesStatsTeamData.removed||[])].filter(member=>member.category==="sales");
+ const salesMembers=[...(salesStatsTeamData.members||[]),...(salesStatsTeamData.removed||[])].filter(member=>member.category==="sales"&&!["ernestu","ernestas"].includes(String(member.name||member.email||"").trim().split(/[\\s.@_-]+/)[0].toLowerCase()));
  if(!salesMembers.length){container.innerHTML='<div class="sales-stats-empty">No Sales team members found.</div>';return}
  const rows=salesMembers.map(member=>{
   const created=requests.filter(request=>request.created_by===member.user_id);
