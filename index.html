@@ -237,7 +237,7 @@ let chatPeople=[];
 let unreadPrices=new Map(),announcedPrices=new Set();
 let currentUser=null,currentRole="",requests=[],activeRequest=null,activeEditRequest=null,currentChatRequest=null,currentChatPeer=null;
 const el=id=>document.getElementById(id);
-const EUROPEAN_HOLIDAY_COUNTRIES=new Set("AD AL AM AT AZ BA BE BG BY CH CY CZ DE DK EE ES FI FO FR GB GE GI GR HR HU IE IS IT LI LT LU LV MC MD ME MK MT NL NO PL PT RO RS SE SI SK SM TR UA VA XK".split(" "));
+const EUROPEAN_HOLIDAY_COUNTRIES=new Set("AM AT AZ BA BE BG BY CH CY CZ DE DK EE ES FI FO FR GB GE GR HR HU IE IT LI LT LU LV MC MD ME MK NL NO PL PT RO RS SE SI SK SM TR UA XK".split(" "));
 const calendarYearCache=new Map();
 let calendarCountriesPromise=null;
 let calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
