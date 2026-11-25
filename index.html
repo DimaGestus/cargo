@@ -562,6 +562,7 @@ async function loadRequests(){
   }
   const merged=new Map(rows.map(row=>[String(row.id),{...row,creator_email:row.created_by===userId?currentUser.email:"Team"}]));
   changes.forEach((row,id)=>{if(row)merged.set(id,row);else merged.delete(id)});
+  baselineRadekExistingPriceAlerts([...merged.values()],userId);
   requests=[...merged.values()].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
   refreshPriceAlerts();renderRequests();renderChatInbox();
  })();
@@ -584,6 +585,18 @@ function pendingPriceAlerts(rows,isSales,seen,userId){
  return isSales&&userId?rows.filter(row=>row.created_by===userId&&Number(row.price_eur)>0&&seen[String(row.id)]!==priceFingerprint(row)):[];
 }
 function readPriceSeen(){try{return JSON.parse(localStorage.getItem("cargo-price-seen-"+currentUser.id)||"{}")}catch{return {}}}
+function baselineRadekExistingPriceAlerts(rows,userId){
+ const baselineKey="cargo-price-baseline-v1-"+userId;
+ if(userId!=="b414285f-70c8-4e47-8414-04bb8b067523"||localStorage.getItem(baselineKey)==="1")return;
+ const baselineTime=Date.parse("2026-11-25T09:19:16Z");
+ const seen=readPriceSeen();
+ rows.filter(row=>row.created_by===userId&&Number(row.price_eur)>0&&(!row.price_entered_at||Date.parse(row.price_entered_at)<baselineTime))
+  .forEach(row=>seen[String(row.id)]=priceFingerprint(row));
+ try{
+  localStorage.setItem("cargo-price-seen-"+userId,JSON.stringify(seen));
+  localStorage.setItem(baselineKey,"1");
+ }catch{}
+}
 const originalTabIcon=document.querySelector('link[rel="icon"]')?.href||"";
 function updatePriceTabBadge(count){
  document.title=count?"🔔 ("+count+") New prices — GESTUS":"GESTUS — Team transport requests";
